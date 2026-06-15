@@ -25,6 +25,7 @@ class DesignationController extends Controller implements HasMiddleware
             new Middleware('permission:Designation Create', ['only' => ['store']]),
             new Middleware('permission:Designation Update', ['only' => ['update']]),
             new Middleware('permission:Designation Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Designation Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -221,6 +222,40 @@ class DesignationController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve designations',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $designation = Designation::find($id);
+
+            if (!$designation) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Designation not found'
+                ], 404);
+            }
+
+            $designation->is_active = !$designation->is_active;
+            $designation->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Designation', "Toggled designation status: {$designation->name} (" . ($designation->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Designation status updated successfully',
+                'data' => [
+                    'id' => $designation->id,
+                    'is_active' => $designation->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle designation status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

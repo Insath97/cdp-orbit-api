@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Mail\UserCreateMail;
+use App\Models\Employee;
 use App\Models\User;
-use App\Traits\FileUploadTrait;
 use App\Traits\ActivityLogTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +20,7 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller implements HasMiddleware
 {
-    use FileUploadTrait, ActivityLogTrait;
+    use ActivityLogTrait;
 
     public static function middleware(): array
     {
@@ -101,19 +101,40 @@ class UserController extends Controller implements HasMiddleware
             $currentUser = auth("api")->user();
             $data = $request->validated();
 
-            // Hash password
-            $rawPassword = $data['password'];
-            $data['password'] = Hash::make($rawPassword);
-
-            // For non-staff users, ensure employee_id is null
-            if ($data['user_type'] !== 'staff') {
-                $data['employee_id'] = null;
+            // Restrict admin user creation to Super Admins only
+            if ($data['user_type'] === 'admin') {
+                if (!$currentUser || !$currentUser->hasRole('Super Admin')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Only Super Admin can create admin users'
+                    ], 403);
+                }
             }
 
-            // Handle Profile Image
-            $imagePath = $this->handleFileUpload($request, 'profile_image', null, 'users/profile', $data['email']);
-            if ($imagePath) {
-                $data['profile_image'] = $imagePath;
+            // Create Employee first if user_type is staff
+            if ($data['user_type'] === 'staff') {
+                $employeeData = [
+                    'employee_code' => $data['employee_code'],
+                    'id_number' => $data['id_number'],
+                    'phone' => $data['phone'] ?? null,
+                    'branch_id' => $data['branch_id'] ?? null,
+                    'zonal_id' => $data['zonal_id'] ?? null,
+                    'region_id' => $data['region_id'] ?? null,
+                    'province_id' => $data['province_id'] ?? null,
+                    'designation_id' => $data['designation_id'] ?? null,
+                    'reporting_manager_id' => $data['reporting_manager_id'] ?? null,
+                ];
+
+                $employee = Employee::create($employeeData);
+
+                // Set staff credentials automatically to id_number
+                $data['employee_id'] = $employee->id;
+                $data['username'] = $data['id_number'];
+                $data['password'] = Hash::make($data['id_number']);
+            } else {
+                // For admin users
+                $data['employee_id'] = null;
+                $data['password'] = Hash::make($data['password']);
             }
 
             $user = User::create($data);
@@ -128,7 +149,7 @@ class UserController extends Controller implements HasMiddleware
                 // Load relationships for enriched email data
                 $user->load(['employee.branch', 'employee.zonal', 'employee.region', 'employee.province', 'employee.reportingManager.user', 'employee.designation']);
 
-                // Prepare email data - ONLY include existing data, no N/A
+                // Prepare email data
                 $emailData = [
                     'user' => [
                         'id' => $user->id,
@@ -138,10 +159,10 @@ class UserController extends Controller implements HasMiddleware
                         'user_type' => $user->user_type,
                         'email_verified_at' => $user->email_verified_at,
                     ],
-                    'password' => $rawPassword,
+                    'password' => ($user->user_type === 'staff') ? $data['id_number'] : $request->password,
                     'role' => $data['role'] ?? null,
                     'created_by' => $currentUser ? $currentUser->name : 'System',
-                    'login_url' => config('app.frontend_url') ?? config('app.url'),
+                    'login_url' => trim(config('app.frontend_url') ?? config('app.url')),
                 ];
 
                 // Only add relationships if they exist
@@ -170,6 +191,8 @@ class UserController extends Controller implements HasMiddleware
                 }
 
                 Mail::to($user->email)->send(new UserCreateMail($emailData));
+
+                $this->logActivity('EMAIL_SENT', 'User', "User login credentials email sent successfully to: {$user->email}", ['user_id' => $user->id]);
             } catch (\Throwable $th) {
                 $this->logActivity('EMAIL_FAILED', 'User', "Failed to send user creation email: {$th->getMessage()}", null, 'error');
             }
@@ -195,10 +218,6 @@ class UserController extends Controller implements HasMiddleware
                 'data' => $userData
             ], 201);
         } catch (\Throwable $th) {
-            if (isset($imagePath)) {
-                $this->deleteFile($imagePath);
-            }
-
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create user',
@@ -243,6 +262,7 @@ class UserController extends Controller implements HasMiddleware
     public function update(UpdateUserRequest $request, string $id)
     {
         try {
+            $currentUser = auth("api")->user();
             $user = User::find($id);
 
             if (!$user) {
@@ -254,21 +274,60 @@ class UserController extends Controller implements HasMiddleware
 
             $data = $request->validated();
 
+            // Restrict admin user update to Super Admins only (both updating an existing admin or changing user_type to admin)
+            $isTargetingAdmin = ($user->user_type === 'admin') || (isset($data['user_type']) && $data['user_type'] === 'admin');
+            if ($isTargetingAdmin) {
+                if (!$currentUser || !$currentUser->hasRole('Super Admin')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Only Super Admin can manage admin users'
+                    ], 403);
+                }
+            }
+
             if (isset($data['password'])) {
                 $data['password'] = Hash::make($data['password']);
             } else {
                 unset($data['password']);
             }
 
-            // For non-staff users, ensure employee_id is null
-            if (isset($data['user_type']) && $data['user_type'] !== 'staff') {
-                $data['employee_id'] = null;
-            }
+            // Handle user_type logic and employee updates
+            $targetUserType = $data['user_type'] ?? $user->user_type;
 
-            // Handle Image Upload
-            $imagePath = $this->handleFileUpload($request, 'profile_image', $user->profile_image, 'users/profile', $user->email);
-            if ($imagePath) {
-                $data['profile_image'] = $imagePath;
+            if ($targetUserType === 'staff') {
+                $employeeData = array_intersect_key($data, array_flip([
+                    'employee_code',
+                    'id_number',
+                    'phone',
+                    'branch_id',
+                    'zonal_id',
+                    'region_id',
+                    'province_id',
+                    'designation_id',
+                    'reporting_manager_id'
+                ]));
+
+                if ($user->employee) {
+                    // Update existing employee
+                    $user->employee->update($employeeData);
+                } else {
+                    // Create new employee if they were previously an admin
+                    $employee = \App\Models\Employee::create($employeeData);
+                    $data['employee_id'] = $employee->id;
+                }
+
+                // If id_number is updated, sync username
+                if (isset($data['id_number'])) {
+                    $data['username'] = $data['id_number'];
+                }
+            } else {
+                // If changing from staff to admin, detach and delete the old employee record
+                if ($user->employee) {
+                    $employee = $user->employee;
+                    $user->update(['employee_id' => null]);
+                    $employee->delete();
+                }
+                $data['employee_id'] = null;
             }
 
             $user->update($data);
@@ -343,8 +402,14 @@ class UserController extends Controller implements HasMiddleware
             }
 
             $username = $user->username;
-            $this->deleteFile($user->profile_image);
+            $employee = $user->employee;
+
             $user->delete();
+
+            // Cascade delete employee record
+            if ($employee) {
+                $employee->delete();
+            }
 
             $this->logActivity('DELETE', 'User', "Deleted user: {$username}");
 

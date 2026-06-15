@@ -25,6 +25,7 @@ class CountryController extends Controller implements HasMiddleware
             new Middleware('permission:Country Create', ['only' => ['store']]),
             new Middleware('permission:Country Update', ['only' => ['update']]),
             new Middleware('permission:Country Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Country Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -205,6 +206,40 @@ class CountryController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve active countries',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $country = Country::find($id);
+
+            if (!$country) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Country not found'
+                ], 404);
+            }
+
+            $country->is_active = !$country->is_active;
+            $country->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Country', "Toggled country status: {$country->name} (" . ($country->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Country status updated successfully',
+                'data' => [
+                    'id' => $country->id,
+                    'is_active' => $country->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle country status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

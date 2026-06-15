@@ -25,6 +25,7 @@ class ProvinceController extends Controller implements HasMiddleware
             new Middleware('permission:Province Create', ['only' => ['store']]),
             new Middleware('permission:Province Update', ['only' => ['update']]),
             new Middleware('permission:Province Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Province Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -211,6 +212,40 @@ class ProvinceController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve provinces',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $province = Province::find($id);
+
+            if (!$province) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Province not found'
+                ], 404);
+            }
+
+            $province->is_active = !$province->is_active;
+            $province->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Province', "Toggled province status: {$province->name} (" . ($province->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Province status updated successfully',
+                'data' => [
+                    'id' => $province->id,
+                    'is_active' => $province->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle province status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

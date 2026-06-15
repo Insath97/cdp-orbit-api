@@ -25,6 +25,7 @@ class GroupController extends Controller implements HasMiddleware
             new Middleware('permission:Group Create', ['only' => ['store']]),
             new Middleware('permission:Group Update', ['only' => ['update']]),
             new Middleware('permission:Group Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Group Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -209,6 +210,40 @@ class GroupController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve active groups',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $group = Group::find($id);
+
+            if (!$group) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Group not found'
+                ], 404);
+            }
+
+            $group->is_active = !$group->is_active;
+            $group->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Group', "Toggled group status: {$group->name} (" . ($group->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Group status updated successfully',
+                'data' => [
+                    'id' => $group->id,
+                    'is_active' => $group->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle group status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

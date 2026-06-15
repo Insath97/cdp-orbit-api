@@ -25,6 +25,9 @@ class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('user');
+        $userObj = \App\Models\User::find($id);
+        $employeeId = $userObj?->employee_id ?? 'NULL';
+
         return [
             'name' => 'sometimes|string|max:255',
             'username' => 'sometimes|string|max:255|unique:users,username,' . $id,
@@ -33,9 +36,17 @@ class UpdateUserRequest extends FormRequest
             'user_type' => 'sometimes|in:admin,staff',
             'role' => 'sometimes|string|exists:roles,name',
 
-            'employee_id' => 'required_if:user_type,staff|nullable|exists:employees,id',
+            // Staff specific validation (embedded employee details)
+            'employee_code' => 'sometimes|string|unique:employees,employee_code,' . $employeeId,
+            'id_number' => 'sometimes|string|unique:employees,id_number,' . $employeeId,
+            'phone' => 'nullable|string',
+            'branch_id' => 'nullable|exists:branches,id',
+            'zonal_id' => 'nullable|exists:zonals,id',
+            'region_id' => 'nullable|exists:regions,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'designation_id' => 'nullable|exists:designations,id',
+            'reporting_manager_id' => 'nullable|exists:employees,id',
 
-            'profile_image' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
             'can_login' => 'sometimes|boolean',
         ];

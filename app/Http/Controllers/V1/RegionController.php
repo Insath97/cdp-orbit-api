@@ -25,6 +25,7 @@ class RegionController extends Controller implements HasMiddleware
             new Middleware('permission:Region Create', ['only' => ['store']]),
             new Middleware('permission:Region Update', ['only' => ['update']]),
             new Middleware('permission:Region Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Region Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -211,6 +212,40 @@ class RegionController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve regions',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $region = Region::find($id);
+
+            if (!$region) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Region not found'
+                ], 404);
+            }
+
+            $region->is_active = !$region->is_active;
+            $region->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Region', "Toggled region status: {$region->name} (" . ($region->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Region status updated successfully',
+                'data' => [
+                    'id' => $region->id,
+                    'is_active' => $region->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle region status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

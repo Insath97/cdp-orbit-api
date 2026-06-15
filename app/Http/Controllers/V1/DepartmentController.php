@@ -25,6 +25,7 @@ class DepartmentController extends Controller implements HasMiddleware
             new Middleware('permission:Department Create', ['only' => ['store']]),
             new Middleware('permission:Department Update', ['only' => ['update']]),
             new Middleware('permission:Department Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Department Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -201,6 +202,40 @@ class DepartmentController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve departments',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $department = Department::find($id);
+
+            if (!$department) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Department not found'
+                ], 404);
+            }
+
+            $department->is_active = !$department->is_active;
+            $department->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Department', "Toggled department status: {$department->name} (" . ($department->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Department status updated successfully',
+                'data' => [
+                    'id' => $department->id,
+                    'is_active' => $department->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle department status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

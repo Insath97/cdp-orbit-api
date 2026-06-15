@@ -25,6 +25,7 @@ class ZonalController extends Controller implements HasMiddleware
             new Middleware('permission:Zonal Create', ['only' => ['store']]),
             new Middleware('permission:Zonal Update', ['only' => ['update']]),
             new Middleware('permission:Zonal Delete', ['only' => ['destroy']]),
+            new Middleware('permission:Zonal Toggle Status', ['only' => ['toggleStatus']]),
         ];
     }
 
@@ -211,6 +212,40 @@ class ZonalController extends Controller implements HasMiddleware
                 'status' => 'error',
                 'message' => 'Failed to retrieve zonals',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    public function toggleStatus(string $id)
+    {
+        try {
+            $zonal = Zonal::find($id);
+
+            if (!$zonal) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Zonal not found'
+                ], 404);
+            }
+
+            $zonal->is_active = !$zonal->is_active;
+            $zonal->save();
+
+            $this->logActivity('TOGGLE_STATUS', 'Zonal', "Toggled zonal status: {$zonal->name} (" . ($zonal->is_active ? 'Active' : 'Inactive') . ")");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Zonal status updated successfully',
+                'data' => [
+                    'id' => $zonal->id,
+                    'is_active' => $zonal->is_active
+                ]
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to toggle zonal status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }
     }

@@ -5,7 +5,6 @@ use App\Http\Controllers\V1\PermissionController;
 use App\Http\Controllers\V1\RoleController;
 use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\DepartmentController;
-use App\Http\Controllers\V1\EmployeeController;
 use App\Http\Controllers\V1\ProvinceController;
 use App\Http\Controllers\V1\RegionController;
 use App\Http\Controllers\V1\ZonalController;
@@ -37,39 +36,58 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::apiResource('users', UserController::class);
 
     // Countries
-    Route::get('countries/list', [CountryController::class, 'getActiveList']);
     Route::apiResource('countries', CountryController::class);
+    Route::prefix('countries')->group(function () {
+        Route::patch('{id}/toggle-status', [CountryController::class, 'toggleStatus']);
+        Route::get('list', [CountryController::class, 'getActiveList']);
+    });
 
     // Provinces
-    Route::get('provinces/list', [ProvinceController::class, 'getProvinceList']);
     Route::apiResource('provinces', ProvinceController::class);
+    Route::prefix('provinces')->group(function () {
+        Route::patch('{id}/toggle-status', [ProvinceController::class, 'toggleStatus']);
+        Route::get('list', [ProvinceController::class, 'getProvinceList']);
+    });
 
     // Zonals (Zones)
-    Route::get('zonals/list', [ZonalController::class, 'getZonalList']);
     Route::apiResource('zonals', ZonalController::class);
+    Route::prefix('zonals')->group(function () {
+        Route::patch('{id}/toggle-status', [ZonalController::class, 'toggleStatus']);
+        Route::get('list', [ZonalController::class, 'getZonalList']);
+    });
 
     // Regions
-    Route::get('regions/list', [RegionController::class, 'getRegionList']);
     Route::apiResource('regions', RegionController::class);
+    Route::prefix('regions')->group(function () {
+        Route::patch('{id}/toggle-status', [RegionController::class, 'toggleStatus']);
+        Route::get('list', [RegionController::class, 'getRegionList']);
+    });
 
     // Branches
-    Route::patch('branches/{id}/toggle-status', [BranchController::class, 'toggleStatus']);
-    Route::get('branches/list', [BranchController::class, 'getBranchList']);
     Route::apiResource('branches', BranchController::class);
+    Route::prefix('branches')->group(function () {
+        Route::patch('{id}/toggle-status', [BranchController::class, 'toggleStatus']);
+        Route::get('list', [BranchController::class, 'getBranchList']);
+    });
 
     // Departments
-    Route::get('departments/list', [DepartmentController::class, 'getDepartmentList']);
     Route::apiResource('departments', DepartmentController::class);
+    Route::prefix('departments')->group(function () {
+        Route::get('{id}/designations', [DepartmentController::class, 'getDesignations']);
+        Route::patch('{id}/toggle-status', [DepartmentController::class, 'toggleStatus']);
+    });
 
     // Designations
-    Route::get('designations/list', [DesignationController::class, 'getDesignationList']);
     Route::apiResource('designations', DesignationController::class);
-
-    // Employees
-    Route::get('employees/list', [EmployeeController::class, 'getEmployeeList']);
-    Route::apiResource('employees', EmployeeController::class);
+    Route::prefix('designations')->group(function () {
+        Route::get('list', [DesignationController::class, 'getActiveList']);
+        Route::patch('{id}/toggle-status', [DesignationController::class, 'toggleStatus']);
+    });
 
     // Groups
-    Route::get('groups/list', [GroupController::class, 'getActiveList']);
     Route::apiResource('groups', GroupController::class);
+    Route::prefix('groups')->group(function () {
+        Route::get('list', [GroupController::class, 'getActiveList']);
+        Route::patch('{id}/toggle-status', [GroupController::class, 'toggleStatus']);
+    });
 });
