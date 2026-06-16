@@ -2,12 +2,12 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
-class UpdatePermissionRequest extends FormRequest
+class UpdateStatusRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -19,25 +19,28 @@ class UpdatePermissionRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        $permissionId = $this->route('permission');
+        $id = $this->route('status');
 
         return [
-            'group_name' => 'sometimes|required|string|max:255',
             'name' => [
                 'sometimes',
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('permissions')->ignore($permissionId),
+                Rule::unique('statuses')->ignore($id),
             ],
+            'color_code' => 'sometimes|required|string|max:50',
+            'description' => 'nullable|string',
+            'is_active' => 'sometimes|boolean',
         ];
     }
 
+    /**
+     * Handle failed validation and return a JSON error response.
+     */
     protected function failedValidation(Validator $validator)
     {
         $errorMessages = $validator->errors();
@@ -51,7 +54,7 @@ class UpdatePermissionRequest extends FormRequest
 
         $message = $fieldErrors->count() > 1
             ? 'There are multiple validation errors. Please review the form and correct the issues.'
-            : 'There is an issue with the input for '.$fieldErrors->first()['field'].'.';
+            : 'There is an issue with the input for ' . $fieldErrors->first()['field'] . '.';
 
         throw new HttpResponseException(response()->json([
             'message' => $message,

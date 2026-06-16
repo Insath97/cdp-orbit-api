@@ -1,17 +1,19 @@
 <?php
 
 use App\Http\Controllers\V1\AuthController;
-use App\Http\Controllers\V1\PermissionController;
-use App\Http\Controllers\V1\RoleController;
-use App\Http\Controllers\V1\UserController;
+use App\Http\Controllers\V1\BranchController;
+use App\Http\Controllers\V1\CountryController;
 use App\Http\Controllers\V1\DepartmentController;
+use App\Http\Controllers\V1\DesignationController;
+use App\Http\Controllers\V1\GroupController;
+use App\Http\Controllers\V1\PermissionController;
 use App\Http\Controllers\V1\ProvinceController;
 use App\Http\Controllers\V1\RegionController;
+use App\Http\Controllers\V1\LeadController;
+use App\Http\Controllers\V1\RoleController;
+use App\Http\Controllers\V1\StatusController;
+use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\ZonalController;
-use App\Http\Controllers\V1\BranchController;
-use App\Http\Controllers\V1\DesignationController;
-use App\Http\Controllers\V1\CountryController;
-use App\Http\Controllers\V1\GroupController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
@@ -85,9 +87,21 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     });
 
     // Groups
-    Route::apiResource('groups', GroupController::class);
     Route::prefix('groups')->group(function () {
         Route::get('list', [GroupController::class, 'getActiveList']);
         Route::patch('{id}/toggle-status', [GroupController::class, 'toggleStatus']);
     });
+    Route::apiResource('groups', GroupController::class);
+
+    // Statuses
+    Route::prefix('statuses')->group(function () {
+        Route::get('list', [StatusController::class, 'getActiveList']);
+        Route::patch('{id}/toggle-status', [StatusController::class, 'toggleStatus']);
+    });
+    Route::apiResource('statuses', StatusController::class);
+
+    // Leads
+    Route::patch('leads/{id}/change-status', [LeadController::class, 'changeStatus']);
+    Route::apiResource('leads', LeadController::class);
+
 });
