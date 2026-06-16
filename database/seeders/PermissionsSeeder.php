@@ -88,21 +88,6 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Group Update', 'group_name' => 'Group Management Permissions'],
             ['name' => 'Group Delete', 'group_name' => 'Group Management Permissions'],
             ['name' => 'Group Toggle Status', 'group_name' => 'Group Management Permissions'],
-
-            /* Status Management */
-            ['name' => 'Status Index', 'group_name' => 'Status Management Permissions'],
-            ['name' => 'Status Create', 'group_name' => 'Status Management Permissions'],
-            ['name' => 'Status Update', 'group_name' => 'Status Management Permissions'],
-            ['name' => 'Status Delete', 'group_name' => 'Status Management Permissions'],
-            ['name' => 'Status Toggle Status', 'group_name' => 'Status Management Permissions'],
-
-            /* Lead Management */
-            ['name' => 'Lead Index', 'group_name' => 'Lead Management Permissions'],
-            ['name' => 'Lead Create', 'group_name' => 'Lead Management Permissions'],
-            ['name' => 'Lead Update', 'group_name' => 'Lead Management Permissions'],
-            ['name' => 'Lead Delete', 'group_name' => 'Lead Management Permissions'],
-            ['name' => 'Lead Change Status', 'group_name' => 'Lead Management Permissions'],
-            ['name' => 'Lead View All', 'group_name' => 'Lead Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {

@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +24,7 @@ class UpdateRoleRequest extends FormRequest
      */
     public function rules(): array
     {
-       $roleId = $this->route('role');
+        $roleId = $this->route('role');
 
         return [
             'name' => [
@@ -52,7 +52,7 @@ class UpdateRoleRequest extends FormRequest
 
         $message = $fieldErrors->count() > 1
             ? 'There are multiple validation errors. Please review the form and correct the issues.'
-            : 'There is an issue with the input for '.$fieldErrors->first()['field'].'.';
+            : 'There is an issue with the input for ' . $fieldErrors->first()['field'] . '.';
 
         throw new HttpResponseException(response()->json([
             'message' => $message,

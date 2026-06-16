@@ -211,7 +211,7 @@ class PermissionController extends Controller implements HasMiddleware
         try {
             $permissions = Permission::select('id', 'name', 'group_name')
                 ->orderBy('group_name', 'asc')
-                ->orderBy('created_at', 'asc')
+                ->orderBy('name', 'asc')
                 ->get();
 
             return response()->json([
