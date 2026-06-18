@@ -32,9 +32,12 @@ class UpdateStatusRequest extends FormRequest
                 'max:255',
                 Rule::unique('statuses')->ignore($id),
             ],
+            'lead_stage_id' => 'sometimes|nullable|integer|exists:lead_stages,id',
             'color_code' => 'sometimes|required|string|max:50',
             'description' => 'nullable|string',
+            'sort_order' => 'sometimes|integer',
             'is_active' => 'sometimes|boolean',
+            'is_need_sms' => 'sometimes|boolean',
         ];
     }
 

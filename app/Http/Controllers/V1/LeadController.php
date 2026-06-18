@@ -9,6 +9,7 @@ use App\Http\Requests\ChangeLeadStatusRequest;
 use App\Models\Lead;
 use App\Models\LeadStatusHistory;
 use App\Traits\ActivityLogTrait;
+use App\Models\LeadStage;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -25,7 +26,7 @@ class LeadController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:Lead Index', ['only' => ['index', 'show']]),
+            new Middleware('permission:Lead Index', ['only' => ['index', 'show', 'getMetrics']]),
             new Middleware('permission:Lead Create', ['only' => ['store']]),
             new Middleware('permission:Lead Update', ['only' => ['update']]),
             new Middleware('permission:Lead Delete', ['only' => ['destroy']]),
@@ -40,8 +41,13 @@ class LeadController extends Controller implements HasMiddleware
     {
         $user = auth('api')->user();
 
-        // Super Admin or Lead View All bypasses all scoping
-        if ($user->hasRole('Super Admin') || $user->hasPermissionTo('Lead View All')) {
+        // If staff, strict ownership check (can only access their own leads)
+        if ($user->user_type === 'staff') {
+            return $lead->created_by === $user->id;
+        }
+
+        // Super Admin or Lead View All/Index bypasses all scoping
+        if ($user->hasRole('Super Admin') || $user->hasPermissionTo('Lead Index') || $user->hasPermissionTo('Lead View All')) {
             return true;
         }
 
@@ -65,8 +71,10 @@ class LeadController extends Controller implements HasMiddleware
 
             $query = Lead::with(['status', 'group', 'creator', 'updater']);
 
-            // Scoping based on permissions and hierarchy
-            if (!$user->hasRole('Super Admin') && !$user->hasPermissionTo('Lead View All')) {
+            // Scoping based on user type and permissions
+            if ($user->user_type === 'staff') {
+                $query->where('created_by', $user->id);
+            } elseif (!$user->hasRole('Super Admin') && !$user->hasPermissionTo('Lead View All')) {
                 $descendantIds = $user->getAllDescendantIds();
                 $allowedUserIds = array_merge([$user->id], $descendantIds);
                 $query->whereIn('created_by', $allowedUserIds);
@@ -97,6 +105,79 @@ class LeadController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve leads',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
+
+    /**
+     * Get lead metrics grouped by Stage and Status.
+     */
+    public function getMetrics(Request $request)
+    {
+        try {
+            $user = auth('api')->user();
+            $query = Lead::query();
+
+            // Scope leads based on user type for metrics
+            if ($user->user_type === 'staff') {
+                // Only count leads of subordinates/children
+                $descendantIds = $user->getAllDescendantIds();
+                $query->whereIn('created_by', $descendantIds);
+            } elseif (!$user->hasRole('Super Admin') && !$user->hasPermissionTo('Lead View All')) {
+                $descendantIds = $user->getAllDescendantIds();
+                $allowedUserIds = array_merge([$user->id], $descendantIds);
+                $query->whereIn('created_by', $allowedUserIds);
+            }
+
+            // Get counts grouped by status_id
+            $leadCounts = $query->select('status_id', DB::raw('count(*) as count'))
+                ->groupBy('status_id')
+                ->pluck('count', 'status_id');
+
+            // Load active lead stages with ordered active statuses
+            $stages = LeadStage::active()
+                ->ordered()
+                ->with(['statuses' => function ($q) {
+                    $q->active()->ordered();
+                }])
+                ->get();
+
+            // Map metrics onto stages and statuses structure
+            $stagesWithMetrics = $stages->map(function ($stage) use ($leadCounts) {
+                $stageCount = 0;
+                $statusesWithCount = $stage->statuses->map(function ($status) use ($leadCounts, &$stageCount) {
+                    $count = $leadCounts->get($status->id, 0);
+                    $stageCount += $count;
+                    
+                    return [
+                        'id' => $status->id,
+                        'name' => $status->name,
+                        'color_code' => $status->color_code,
+                        'sort_order' => $status->sort_order,
+                        'is_need_sms' => $status->is_need_sms,
+                        'lead_count' => $count
+                    ];
+                });
+
+                return [
+                    'id' => $stage->id,
+                    'name' => $stage->name,
+                    'sort_order' => $stage->sort_order,
+                    'lead_count' => $stageCount,
+                    'statuses' => $statusesWithCount
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Lead metrics retrieved successfully',
+                'data' => $stagesWithMetrics
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve lead metrics',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
@@ -320,6 +401,17 @@ class LeadController extends Controller implements HasMiddleware
             ]);
 
             DB::commit();
+
+            // Trigger status change SMS if needed
+            $newStatus = \App\Models\Status::find($newStatusId);
+            if ($newStatus && $newStatus->is_need_sms) {
+                try {
+                    $smsService = app(\App\Services\SmsService::class);
+                    $smsService->sendStatusChangeSms($lead, $newStatus, $data['reason'] ?? '');
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send Lead Status change SMS: " . $e->getMessage());
+                }
+            }
 
             $this->logActivity('STATUS_CHANGE', 'Lead', "Changed lead status: {$lead->name} from status ID {$oldStatusId} to {$newStatusId}", $data);
 

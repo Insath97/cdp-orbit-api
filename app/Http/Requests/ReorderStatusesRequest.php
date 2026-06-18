@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class CreateStatusRequest extends FormRequest
+class ReorderStatusesRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +22,9 @@ class CreateStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255|unique:statuses,name',
-            'lead_stage_id' => 'nullable|integer|exists:lead_stages,id',
-            'color_code' => 'required|string|max:50',
-            'description' => 'nullable|string',
-            'sort_order' => 'sometimes|integer',
-            'is_active' => 'sometimes|boolean',
-            'is_need_sms' => 'sometimes|boolean',
+            'statuses' => 'required|array',
+            'statuses.*.id' => 'required|integer|exists:statuses,id',
+            'statuses.*.sort_order' => 'required|integer',
         ];
     }
 

@@ -5,46 +5,36 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Status extends Model
+class LeadStage extends Model
 {
     use HasFactory;
 
+    protected $table = 'lead_stages';
+
     protected $fillable = [
         'name',
-        'lead_stage_id',
-        'color_code',
-        'description',
         'sort_order',
+        'description',
         'is_active',
-        'is_need_sms',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
-        'lead_stage_id' => 'integer',
-        'is_need_sms' => 'boolean',
     ];
 
     /**
-     * Get the lead stage associated with the status.
+     * Get the statuses associated with this lead stage, ordered by sort_order.
      */
-    public function leadStage()
+    public function statuses(): HasMany
     {
-        return $this->belongsTo(LeadStage::class, 'lead_stage_id');
+        return $this->hasMany(Status::class, 'lead_stage_id')->orderBy('sort_order', 'asc');
     }
 
     /**
-     * Get the SMS template associated with this status.
-     */
-    public function smsTemplate()
-    {
-        return $this->hasOne(SmsTemplate::class);
-    }
-
-    /**
-     * Scope a query to only include active statuses.
+     * Scope a query to only include active lead stages.
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -52,7 +42,7 @@ class Status extends Model
     }
 
     /**
-     * Scope a query to sort statuses by their sort_order.
+     * Scope a query to sort lead stages by their sort_order.
      */
     public function scopeOrdered(Builder $query): Builder
     {
@@ -60,7 +50,7 @@ class Status extends Model
     }
 
     /**
-     * Scope a query to search statuses by name, color code, or description.
+     * Scope a query to search lead stages by name or description.
      */
     public function scopeSearch(Builder $query, ?string $search): Builder
     {
@@ -70,7 +60,6 @@ class Status extends Model
 
         return $query->where(function (Builder $q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
-              ->orWhere('color_code', 'like', "%{$search}%")
               ->orWhere('description', 'like', "%{$search}%");
         });
     }

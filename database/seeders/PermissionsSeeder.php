@@ -96,6 +96,14 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Status Delete', 'group_name' => 'Status Management Permissions'],
             ['name' => 'Status Toggle Status', 'group_name' => 'Status Management Permissions'],
 
+            /* Lead Stage Management */
+            ['name' => 'LeadStage Index', 'group_name' => 'Lead Stage Management Permissions'],
+            ['name' => 'LeadStage Create', 'group_name' => 'Lead Stage Management Permissions'],
+            ['name' => 'LeadStage Update', 'group_name' => 'Lead Stage Management Permissions'],
+            ['name' => 'LeadStage Delete', 'group_name' => 'Lead Stage Management Permissions'],
+            ['name' => 'LeadStage Toggle Status', 'group_name' => 'Lead Stage Management Permissions'],
+            ['name' => 'LeadStage Reorder', 'group_name' => 'Lead Stage Management Permissions'],
+
             /* Lead Management */
             ['name' => 'Lead Index', 'group_name' => 'Lead Management Permissions'],
             ['name' => 'Lead Create', 'group_name' => 'Lead Management Permissions'],
@@ -103,6 +111,31 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Lead Delete', 'group_name' => 'Lead Management Permissions'],
             ['name' => 'Lead Change Status', 'group_name' => 'Lead Management Permissions'],
             ['name' => 'Lead View All', 'group_name' => 'Lead Management Permissions'],
+
+            /* Announcement Management */
+            ['name' => 'Announcement Index', 'group_name' => 'Announcement Management Permissions'],
+            ['name' => 'Announcement Create', 'group_name' => 'Announcement Management Permissions'],
+            ['name' => 'Announcement Update', 'group_name' => 'Announcement Management Permissions'],
+            ['name' => 'Announcement Delete', 'group_name' => 'Announcement Management Permissions'],
+            ['name' => 'Announcement Toggle Status', 'group_name' => 'Announcement Management Permissions'],
+            ['name' => 'Announcement View All', 'group_name' => 'Announcement Management Permissions'],
+
+            /* Campaign Management */
+            ['name' => 'Campaign Index', 'group_name' => 'Campaign Management Permissions'],
+            ['name' => 'Campaign Create', 'group_name' => 'Campaign Management Permissions'],
+            ['name' => 'Campaign Update', 'group_name' => 'Campaign Management Permissions'],
+            ['name' => 'Campaign Delete', 'group_name' => 'Campaign Management Permissions'],
+            ['name' => 'Campaign Toggle Status', 'group_name' => 'Campaign Management Permissions'],
+            ['name' => 'Campaign View All', 'group_name' => 'Campaign Management Permissions'],
+
+            /* SMS Management */
+            ['name' => 'Sms Send', 'group_name' => 'SMS Management Permissions'],
+            ['name' => 'Sms Send All', 'group_name' => 'SMS Management Permissions'],
+            ['name' => 'Sms View Logs', 'group_name' => 'SMS Management Permissions'],
+            ['name' => 'SmsTemplate Index', 'group_name' => 'SMS Management Permissions'],
+            ['name' => 'SmsTemplate Create', 'group_name' => 'SMS Management Permissions'],
+            ['name' => 'SmsTemplate Update', 'group_name' => 'SMS Management Permissions'],
+            ['name' => 'SmsTemplate Delete', 'group_name' => 'SMS Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {

@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class CreateStatusRequest extends FormRequest
+class UpdateSmsTemplateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,14 +21,13 @@ class CreateStatusRequest extends FormRequest
      */
     public function rules(): array
     {
+        $templateId = $this->route('sms_template');
+
         return [
-            'name' => 'required|string|max:255|unique:statuses,name',
-            'lead_stage_id' => 'nullable|integer|exists:lead_stages,id',
-            'color_code' => 'required|string|max:50',
-            'description' => 'nullable|string',
-            'sort_order' => 'sometimes|integer',
-            'is_active' => 'sometimes|boolean',
-            'is_need_sms' => 'sometimes|boolean',
+            'title' => 'sometimes|required|string|max:255',
+            'content' => 'sometimes|required|string',
+            'type' => 'sometimes|required|in:all,announcement,campaigns,status',
+            'status_id' => 'required_if:type,status|nullable|integer|exists:statuses,id|unique:sms_templates,status_id,' . $templateId,
         ];
     }
 

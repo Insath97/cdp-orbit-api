@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class CreateStatusRequest extends FormRequest
+class CreateLeadStageRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +22,10 @@ class CreateStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255|unique:statuses,name',
-            'lead_stage_id' => 'nullable|integer|exists:lead_stages,id',
-            'color_code' => 'required|string|max:50',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255|unique:lead_stages,name',
             'sort_order' => 'sometimes|integer',
+            'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
-            'is_need_sms' => 'sometimes|boolean',
         ];
     }
 
@@ -48,7 +45,7 @@ class CreateStatusRequest extends FormRequest
 
         $message = $fieldErrors->count() > 1
             ? 'There are multiple validation errors. Please review the form and correct the issues.'
-            : 'There is an issue with the input for ' . $fieldErrors->first()['field'] . '.';
+            : 'There is an issue with the input for '.$fieldErrors->first()['field'].'.';
 
         throw new HttpResponseException(response()->json([
             'message' => $message,

@@ -36,7 +36,13 @@ class UserController extends Controller implements HasMiddleware
     {
         try {
             $perPage = $request->get('per_page', 15);
+            $currentUser = auth('api')->user();
             $query = User::with(['employee.branch', 'employee.zonal', 'employee.region', 'employee.province', 'employee.reportingManager.user', 'employee.designation', 'roles']);
+
+            if ($currentUser->user_type === 'staff') {
+                $descendantIds = $currentUser->getAllDescendantIds();
+                $query->whereIn('id', $descendantIds);
+            }
 
             if ($request->has('search')) {
                 $search = $request->search;
@@ -228,6 +234,7 @@ class UserController extends Controller implements HasMiddleware
     public function show(string $id)
     {
         try {
+            $currentUser = auth('api')->user();
             $user = User::with(['employee.branch', 'employee.zonal', 'employee.region', 'employee.province', 'employee.reportingManager.user', 'employee.subordinates.user', 'employee.designation', 'roles'])->find($id);
 
             if (!$user) {
@@ -235,6 +242,16 @@ class UserController extends Controller implements HasMiddleware
                     'status' => 'error',
                     'message' => 'User not found'
                 ], 404);
+            }
+
+            // If staff, restrict access to self or descendants
+            if ($currentUser->user_type === 'staff') {
+                if ($user->id !== $currentUser->id && !in_array($user->id, $currentUser->getAllDescendantIds())) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Unauthorized access to this user profile'
+                    ], 403);
+                }
             }
 
             $userData = $user->toArray();

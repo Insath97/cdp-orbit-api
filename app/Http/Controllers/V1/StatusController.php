@@ -21,9 +21,9 @@ class StatusController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:Status Index', ['only' => ['index', 'show']]),
+            new Middleware('permission:Status Index', ['only' => ['index', 'show', 'getActiveList']]),
             new Middleware('permission:Status Create', ['only' => ['store']]),
-            new Middleware('permission:Status Update', ['only' => ['update']]),
+            new Middleware('permission:Status Update', ['only' => ['update', 'reorder']]),
             new Middleware('permission:Status Delete', ['only' => ['destroy']]),
             new Middleware('permission:Status Toggle Status', ['only' => ['toggleStatus']]),
         ];
@@ -36,7 +36,7 @@ class StatusController extends Controller implements HasMiddleware
     {
         try {
             $perPage = $request->get('per_page', 15);
-            $query = Status::query();
+            $query = Status::with(['leadStage', 'smsTemplate']);
 
             // Apply Search Scope if search parameter is present
             if ($request->has('search') && $request->search != '') {
@@ -47,7 +47,11 @@ class StatusController extends Controller implements HasMiddleware
                 $query->where('is_active', $request->boolean('is_active'));
             }
 
-            $statuses = $query->orderBy('name', 'asc')->paginate($perPage);
+            if ($request->has('lead_stage_id')) {
+                $query->where('lead_stage_id', $request->lead_stage_id);
+            }
+
+            $statuses = $query->orderBy('sort_order', 'asc')->orderBy('name', 'asc')->paginate($perPage);
 
             return response()->json([
                 'status' => 'success',
@@ -70,6 +74,13 @@ class StatusController extends Controller implements HasMiddleware
     {
         try {
             $data = $request->validated();
+            
+            // Assign next sort_order if not provided
+            if (!isset($data['sort_order'])) {
+                $leadStageId = $data['lead_stage_id'] ?? null;
+                $data['sort_order'] = Status::where('lead_stage_id', $leadStageId)->max('sort_order') + 1;
+            }
+
             $status = Status::create($data);
 
             $this->logActivity('CREATE', 'Status', "Created status: {$status->name}", $data);
@@ -77,7 +88,7 @@ class StatusController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'Status created successfully',
-                'data' => $status,
+                'data' => $status->load(['leadStage', 'smsTemplate']),
             ], 201);
         } catch (\Throwable $th) {
             return response()->json([
@@ -94,7 +105,7 @@ class StatusController extends Controller implements HasMiddleware
     public function show(string $id)
     {
         try {
-            $status = Status::find($id);
+            $status = Status::with(['leadStage', 'smsTemplate'])->find($id);
 
             if (! $status) {
                 return response()->json([
@@ -140,7 +151,7 @@ class StatusController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'Status updated successfully',
-                'data' => $status,
+                'data' => $status->load(['leadStage', 'smsTemplate']),
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
@@ -190,7 +201,10 @@ class StatusController extends Controller implements HasMiddleware
     public function getActiveList()
     {
         try {
-            $statuses = Status::active()->orderBy('name', 'asc')->get(['id', 'name', 'color_code']);
+            $statuses = Status::active()
+                ->ordered()
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'lead_stage_id', 'color_code', 'sort_order']);
 
             if ($statuses->isEmpty()) {
                 return response()->json([
@@ -246,6 +260,39 @@ class StatusController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to toggle status',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reorder statuses in bulk (usually under a specific stage).
+     */
+    public function reorder(\App\Http\Requests\ReorderStatusesRequest $request)
+    {
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $data = $request->validated();
+            
+            foreach ($data['statuses'] as $statusItem) {
+                Status::where('id', $statusItem['id'])->update([
+                    'sort_order' => $statusItem['sort_order']
+                ]);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            $this->logActivity('REORDER', 'Status', "Bulk reordered statuses", $data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Statuses reordered successfully'
+            ], 200);
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to reorder statuses',
                 'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
             ], 500);
         }

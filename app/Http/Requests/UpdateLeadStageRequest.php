@@ -5,8 +5,9 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
-class CreateStatusRequest extends FormRequest
+class UpdateLeadStageRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,14 +22,19 @@ class CreateStatusRequest extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route('lead_stage');
+
         return [
-            'name' => 'required|string|max:255|unique:statuses,name',
-            'lead_stage_id' => 'nullable|integer|exists:lead_stages,id',
-            'color_code' => 'required|string|max:50',
-            'description' => 'nullable|string',
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('lead_stages')->ignore($id),
+            ],
             'sort_order' => 'sometimes|integer',
+            'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
-            'is_need_sms' => 'sometimes|boolean',
         ];
     }
 

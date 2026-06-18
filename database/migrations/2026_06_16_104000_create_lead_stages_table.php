@@ -11,15 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('statuses', function (Blueprint $table) {
+        Schema::create('lead_stages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('lead_stage_id')->constrained('lead_stages')->cascadeOnDelete();
-            $table->integer('sort_order')->default(0);
             $table->string('name')->unique();
-            $table->string('color_code', 50);
+            $table->integer('sort_order')->default(0)->index();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->boolean('is_need_sms')->default(false);
             $table->timestamps();
         });
     }
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('statuses');
+        Schema::dropIfExists('lead_stages');
     }
 };
