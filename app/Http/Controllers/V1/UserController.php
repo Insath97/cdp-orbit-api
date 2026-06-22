@@ -119,6 +119,9 @@ class UserController extends Controller implements HasMiddleware
             // Create Employee first if user_type is staff
             if ($data['user_type'] === 'staff') {
                 $employeeData = [
+                    'f_name' => $data['f_name'],
+                    'l_name' => $data['l_name'],
+                    'full_name' => trim($data['f_name'] . ' ' . $data['l_name']),
                     'employee_code' => $data['employee_code'],
                     'id_number' => $data['id_number'],
                     'phone' => $data['phone'] ?? null,

@@ -79,7 +79,7 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
 
     // Departments
      Route::prefix('departments')->group(function () {
-        Route::get('{id}/designations', [DepartmentController::class, 'getDesignations']);
+        Route::get('list', [DepartmentController::class, 'getDepartmentList']);
         Route::patch('{id}/toggle-status', [DepartmentController::class, 'toggleStatus']);
     });
     Route::apiResource('departments', DepartmentController::class);
@@ -87,7 +87,7 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
 
     // Designations
      Route::prefix('designations')->group(function () {
-        Route::get('list', [DesignationController::class, 'getActiveList']);
+        Route::get('list', [DesignationController::class, 'getDesignationList']);
         Route::patch('{id}/toggle-status', [DesignationController::class, 'toggleStatus']);
     });
     Route::apiResource('designations', DesignationController::class);
