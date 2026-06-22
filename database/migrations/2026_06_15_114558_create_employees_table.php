@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('f_name');
             $table->string('l_name');
             $table->string('full_name');
-            $table->string('name_with_initials');
+            $table->string('name_with_initials')->nullable();
             $table->string('employee_code')->unique()->nullable();
             $table->foreignId('reporting_manager_id')->nullable()->constrained('employees')->nullOnDelete();
 
