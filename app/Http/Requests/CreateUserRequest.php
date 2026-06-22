@@ -33,6 +33,8 @@ class CreateUserRequest extends FormRequest
             'role' => 'required|string|exists:roles,name',
 
             // Staff specific validation (embedded employee details)
+            'f_name' => 'required_if:user_type,staff|nullable|string|max:255',
+            'l_name' => 'required_if:user_type,staff|nullable|string|max:255',
             'employee_code' => 'required_if:user_type,staff|nullable|string|unique:employees,employee_code',
             'id_number' => 'required_if:user_type,staff|nullable|string|unique:employees,id_number',
             'phone' => 'nullable|string',

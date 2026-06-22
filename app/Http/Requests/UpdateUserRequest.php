@@ -37,6 +37,8 @@ class UpdateUserRequest extends FormRequest
             'role' => 'sometimes|string|exists:roles,name',
 
             // Staff specific validation (embedded employee details)
+            'f_name' => 'sometimes|string|max:255',
+            'l_name' => 'sometimes|string|max:255',
             'employee_code' => 'sometimes|string|unique:employees,employee_code,' . $employeeId,
             'id_number' => 'sometimes|string|unique:employees,id_number,' . $employeeId,
             'phone' => 'nullable|string',

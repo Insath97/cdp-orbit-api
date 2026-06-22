@@ -315,6 +315,8 @@ class UserController extends Controller implements HasMiddleware
 
             if ($targetUserType === 'staff') {
                 $employeeData = array_intersect_key($data, array_flip([
+                    'f_name',
+                    'l_name',
                     'employee_code',
                     'id_number',
                     'phone',
@@ -328,9 +330,17 @@ class UserController extends Controller implements HasMiddleware
 
                 if ($user->employee) {
                     // Update existing employee
+                    if (isset($employeeData['f_name']) || isset($employeeData['l_name'])) {
+                        $fName = $employeeData['f_name'] ?? $user->employee->f_name;
+                        $lName = $employeeData['l_name'] ?? $user->employee->l_name;
+                        $employeeData['full_name'] = trim($fName . ' ' . $lName);
+                    }
                     $user->employee->update($employeeData);
                 } else {
                     // Create new employee if they were previously an admin
+                    $fName = $employeeData['f_name'] ?? '';
+                    $lName = $employeeData['l_name'] ?? '';
+                    $employeeData['full_name'] = trim($fName . ' ' . $lName);
                     $employee = \App\Models\Employee::create($employeeData);
                     $data['employee_id'] = $employee->id;
                 }
