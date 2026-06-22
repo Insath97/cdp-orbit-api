@@ -131,6 +131,23 @@ class UserController extends Controller implements HasMiddleware
                     'province_id' => $data['province_id'] ?? null,
                     'designation_id' => $data['designation_id'] ?? null,
                     'reporting_manager_id' => $data['reporting_manager_id'] ?? null,
+                    'department_id' => $data['department_id'] ?? null,
+                    'employee_type' => $data['employee_type'],
+                    'id_type' => $data['id_type'],
+                    'date_of_birth' => $data['date_of_birth'],
+                    'email' => $data['email'],
+                    'address_line_1' => $data['address_line_1'] ?? null,
+                    'city' => $data['city'] ?? null,
+                    'state' => $data['state'] ?? null,
+                    'country' => $data['country'] ?? 'Sri Lanka',
+                    'postal_code' => $data['postal_code'] ?? null,
+                    'phone_primary' => $data['phone_primary'],
+                    'phone_secondary' => $data['phone_secondary'] ?? null,
+                    'have_whatsapp' => $data['have_whatsapp'] ?? false,
+                    'whatsapp_number' => $data['whatsapp_number'] ?? null,
+                    'start_date' => $data['start_date'] ?? null,
+                    'end_date' => $data['end_date'] ?? null,
+                    'name_with_initials' => $data['name_with_initials'] ?? null,
                 ];
 
                 $employee = Employee::create($employeeData);
@@ -139,6 +156,7 @@ class UserController extends Controller implements HasMiddleware
                 $data['employee_id'] = $employee->id;
                 $data['username'] = $data['id_number'];
                 $data['password'] = Hash::make($data['id_number']);
+                $data['name'] = $data['name'] ?? $employeeData['full_name'];
             } else {
                 // For admin users
                 $data['employee_id'] = null;
@@ -325,7 +343,24 @@ class UserController extends Controller implements HasMiddleware
                     'region_id',
                     'province_id',
                     'designation_id',
-                    'reporting_manager_id'
+                    'reporting_manager_id',
+                    'department_id',
+                    'employee_type',
+                    'id_type',
+                    'date_of_birth',
+                    'email',
+                    'address_line_1',
+                    'city',
+                    'state',
+                    'country',
+                    'postal_code',
+                    'phone_primary',
+                    'phone_secondary',
+                    'have_whatsapp',
+                    'whatsapp_number',
+                    'start_date',
+                    'end_date',
+                    'name_with_initials'
                 ]));
 
                 if ($user->employee) {
@@ -341,6 +376,12 @@ class UserController extends Controller implements HasMiddleware
                     $fName = $employeeData['f_name'] ?? '';
                     $lName = $employeeData['l_name'] ?? '';
                     $employeeData['full_name'] = trim($fName . ' ' . $lName);
+                    if (!isset($employeeData['country'])) {
+                        $employeeData['country'] = 'Sri Lanka';
+                    }
+                    if (!isset($employeeData['have_whatsapp'])) {
+                        $employeeData['have_whatsapp'] = false;
+                    }
                     $employee = \App\Models\Employee::create($employeeData);
                     $data['employee_id'] = $employee->id;
                 }
@@ -348,6 +389,11 @@ class UserController extends Controller implements HasMiddleware
                 // If id_number is updated, sync username
                 if (isset($data['id_number'])) {
                     $data['username'] = $data['id_number'];
+                }
+
+                // If f_name/l_name is updated, sync user name
+                if (isset($employeeData['f_name']) || isset($employeeData['l_name'])) {
+                    $data['name'] = $data['name'] ?? trim(($employeeData['f_name'] ?? $user->employee?->f_name ?? '') . ' ' . ($employeeData['l_name'] ?? $user->employee?->l_name ?? ''));
                 }
             } else {
                 // If changing from staff to admin, detach and delete the old employee record
