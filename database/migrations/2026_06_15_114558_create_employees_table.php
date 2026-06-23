@@ -27,11 +27,11 @@ return new class extends Migration
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->foreignId('designation_id')->constrained('designations')->cascadeOnDelete();
-            
+
             $table->enum('employee_type', ['permanent', 'contract', 'internship', 'probation']);
             $table->enum('id_type', ['nic', 'passport', 'driving_license', 'other']);
             $table->string('id_number')->unique();
-            $table->date('date_of_birth');
+            $table->date('date_of_birth')->nullable();
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('address_line_1')->nullable();
