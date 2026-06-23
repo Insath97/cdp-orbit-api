@@ -136,6 +136,10 @@ class PermissionsSeeder extends Seeder
             ['name' => 'SmsTemplate Create', 'group_name' => 'SMS Management Permissions'],
             ['name' => 'SmsTemplate Update', 'group_name' => 'SMS Management Permissions'],
             ['name' => 'SmsTemplate Delete', 'group_name' => 'SMS Management Permissions'],
+
+            /* Import Management */
+            ['name' => 'Import Index', 'group_name' => 'Import Management Permissions'],
+            ['name' => 'Bulk Import', 'group_name' => 'Import Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {

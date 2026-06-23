@@ -19,6 +19,7 @@ use App\Http\Controllers\V1\SmsController;
 use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\ZonalController;
 use App\Http\Controllers\V1\SmsTemplateController;
+use App\Http\Controllers\V1\ImportController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
@@ -32,6 +33,14 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+
+    // Imports
+    Route::prefix('import')->group(function () {
+        Route::get('tables/list', [ImportController::class, 'listTables']);
+        Route::get('tables', [ImportController::class, 'index']);
+        Route::post('{table}', [ImportController::class, 'import']);
+        Route::get('template/{table}', [ImportController::class, 'downloadTemplate']);
+    });
 
     Route::get('permissions/list', [PermissionController::class, 'getPermissionList']);
     Route::apiResource('permissions', PermissionController::class);
