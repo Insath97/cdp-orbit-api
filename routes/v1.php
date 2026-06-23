@@ -20,6 +20,7 @@ use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\ZonalController;
 use App\Http\Controllers\V1\SmsTemplateController;
 use App\Http\Controllers\V1\ImportController;
+use App\Http\Controllers\V1\ReportController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
@@ -143,5 +144,8 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::post('sms/send', [SmsController::class, 'send']);
     Route::post('sms/send-to-all', [SmsController::class, 'sendToAllLeads']);
     Route::apiResource('sms-templates', SmsTemplateController::class);
+
+    // Reports
+    Route::get('reports/employee-hierarchy', [ReportController::class, 'employeeHierarchy']);
 
 });

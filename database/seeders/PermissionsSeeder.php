@@ -140,6 +140,9 @@ class PermissionsSeeder extends Seeder
             /* Import Management */
             ['name' => 'Import Index', 'group_name' => 'Import Management Permissions'],
             ['name' => 'Bulk Import', 'group_name' => 'Import Management Permissions'],
+
+            /* Report Management */
+            ['name' => 'Report Hierarchy', 'group_name' => 'Report Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {
