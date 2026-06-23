@@ -24,12 +24,95 @@ class UserController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:User Index', only: ['index', 'show']),
+            new Middleware('permission:User Index', only: ['index', 'show', 'getStaffList']),
             new Middleware('permission:User Create', only: ['store']),
             new Middleware('permission:User Update', only: ['update']),
             new Middleware('permission:User Delete', only: ['destroy']),
             new Middleware('permission:User Toggle Status', only: ['toggleStatus']),
         ];
+    }
+
+    public function getStaffList(Request $request)
+    {
+        try {
+            $users = User::where('user_type', 'staff')
+                ->where('is_active', true)
+                ->with([
+                    'employee' => function ($query) {
+                        $query->select([
+                            'id',
+                            'full_name',
+                            'employee_code',
+                            'id_type',
+                            'id_number',
+                            'reporting_manager_id',
+                            'province_id',
+                            'region_id',
+                            'branch_id',
+                            'department_id',
+                            'designation_id'
+                        ])->with([
+                            'reportingManager:id,full_name',
+                            'province:id,name',
+                            'region:id,name',
+                            'branch:id,name',
+                            'department:id,name',
+                            'designation:id,name'
+                        ]);
+                    }
+                ])
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'employee_id']);
+
+            $formattedUsers = $users->map(function ($user) {
+                $emp = $user->employee;
+                return [
+                    'user_id' => $user->id,
+                    'username' => $user->name,
+                    'employee_id' => $emp?->id,
+                    'full_name' => $emp?->full_name,
+                    'employee_code' => $emp?->employee_code,
+                    'id_type' => $emp?->id_type,
+                    'id_number' => $emp?->id_number,
+                    'reporting_manager' => $emp?->reportingManager ? [
+                        'id' => $emp->reportingManager->id,
+                        'full_name' => $emp->reportingManager->full_name
+                    ] : null,
+                    'province' => $emp?->province ? [
+                        'id' => $emp->province->id,
+                        'name' => $emp->province->name
+                    ] : null,
+                    'region' => $emp?->region ? [
+                        'id' => $emp->region->id,
+                        'name' => $emp->region->name
+                    ] : null,
+                    'branch' => $emp?->branch ? [
+                        'id' => $emp->branch->id,
+                        'name' => $emp->branch->name
+                    ] : null,
+                    'department' => $emp?->department ? [
+                        'id' => $emp->department->id,
+                        'name' => $emp->department->name
+                    ] : null,
+                    'designation' => $emp?->designation ? [
+                        'id' => $emp->designation->id,
+                        'name' => $emp->designation->name
+                    ] : null,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Staff list retrieved successfully',
+                'data' => $formattedUsers,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve staff list',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
+            ], 500);
+        }
     }
 
     public function index(Request $request)
