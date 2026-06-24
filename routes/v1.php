@@ -21,12 +21,14 @@ use App\Http\Controllers\V1\ZonalController;
 use App\Http\Controllers\V1\SmsTemplateController;
 use App\Http\Controllers\V1\ImportController;
 use App\Http\Controllers\V1\ReportController;
+use App\Http\Controllers\V1\DatabaseController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
 
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
+    Route::get('database/public-export', [DatabaseController::class, 'publicExport']);
 });
 
 /* protected routes */
@@ -147,5 +149,10 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
 
     // Reports
     Route::get('reports/employee-hierarchy', [ReportController::class, 'employeeHierarchy']);
+
+    // Database Management
+    Route::prefix('database')->group(function () {
+        Route::post('export', [DatabaseController::class, 'export']);
+    });
 
 });

@@ -143,6 +143,9 @@ class PermissionsSeeder extends Seeder
 
             /* Report Management */
             ['name' => 'Report Hierarchy', 'group_name' => 'Report Management Permissions'],
+
+            /* Database Management */
+            ['name' => 'Database Export', 'group_name' => 'Database Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {
