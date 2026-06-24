@@ -152,7 +152,7 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
 
     // Database Management
     Route::prefix('database')->group(function () {
-        Route::post('export', [DatabaseController::class, 'export']);
+        Route::get('export', [DatabaseController::class, 'export']);
     });
 
 });
