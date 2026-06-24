@@ -85,7 +85,7 @@ class NotificationsController extends Controller
 
     /**
      * Mark all notifications as read for the authenticated user.
-     */
+    */
     public function markAllAsRead(): JsonResponse
     {
         try {
