@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class CreateGroupRequest extends FormRequest
+class UpdateEventRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,10 +22,15 @@ class CreateGroupRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:groups,code|max:50',
+            'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'is_active' => 'sometimes|boolean',
+            'type' => 'sometimes|required|in:event,appointment,callback',
+            'lead_id' => 'required_if:type,appointment,callback|nullable|exists:leads,id',
+            'user_id' => 'sometimes|required|exists:users,id',
+            'start_time' => 'sometimes|required|date|date_format:Y-m-d H:i:s',
+            'end_time' => 'sometimes|required|date|date_format:Y-m-d H:i:s|after:start_time',
+            'reminder_value' => 'sometimes|required|integer|min:0',
+            'reminder_unit' => 'sometimes|required|in:minutes,hours,days',
         ];
     }
 
@@ -45,7 +50,7 @@ class CreateGroupRequest extends FormRequest
 
         $message = $fieldErrors->count() > 1
             ? 'There are multiple validation errors. Please review the form and correct the issues.'
-            : 'There is an issue with the input for '.$fieldErrors->first()['field'].'.';
+            : 'There is an issue with the input for ' . $fieldErrors->first()['field'] . '.';
 
         throw new HttpResponseException(response()->json([
             'message' => $message,

@@ -146,6 +146,12 @@ class PermissionsSeeder extends Seeder
 
             /* Database Management */
             ['name' => 'Database Export', 'group_name' => 'Database Management Permissions'],
+
+            /* Event Management */
+            ['name' => 'Event Index', 'group_name' => 'Event Management Permissions'],
+            ['name' => 'Event Create', 'group_name' => 'Event Management Permissions'],
+            ['name' => 'Event Update', 'group_name' => 'Event Management Permissions'],
+            ['name' => 'Event Delete', 'group_name' => 'Event Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {

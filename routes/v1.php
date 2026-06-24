@@ -22,6 +22,8 @@ use App\Http\Controllers\V1\SmsTemplateController;
 use App\Http\Controllers\V1\ImportController;
 use App\Http\Controllers\V1\ReportController;
 use App\Http\Controllers\V1\DatabaseController;
+use App\Http\Controllers\V1\EventController;
+use App\Http\Controllers\V1\NotificationsController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
@@ -153,6 +155,16 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     // Database Management
     Route::prefix('database')->group(function () {
         Route::get('export', [DatabaseController::class, 'export']);
+    });
+
+    // Events & Calendar
+    Route::apiResource('events', EventController::class);
+
+    // Notifications
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationsController::class, 'index']);
+        Route::patch('{id}/read', [NotificationsController::class, 'markAsRead']);
+        Route::post('mark-all-read', [NotificationsController::class, 'markAllAsRead']);
     });
 
 });

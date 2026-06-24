@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 
@@ -31,9 +31,10 @@ class CreateAnnouncementRequest extends FormRequest
                 'integer',
                 function ($attribute, $value, $fail) {
                     $targetType = $this->input('target_type');
-                    if ($targetType && !in_array($targetType, ['all', 'users', 'customers'])) {
+                    if ($targetType && ! in_array($targetType, ['all', 'users', 'customers'])) {
                         if (is_null($value)) {
                             $fail('The target_id field is required when target_type is not "all", "users" or "customers".');
+
                             return;
                         }
                         $table = match ($targetType) {
@@ -47,11 +48,11 @@ class CreateAnnouncementRequest extends FormRequest
                             'region' => 'regions',
                             default => null,
                         };
-                        if ($table && !DB::table($table)->where('id', $value)->exists()) {
-                            $fail('The selected target_id is invalid for the target_type "' . $targetType . '".');
+                        if ($table && ! DB::table($table)->where('id', $value)->exists()) {
+                            $fail('The selected target_id is invalid for the target_type "'.$targetType.'".');
                         }
                     }
-                }
+                },
             ],
             'is_active' => 'sometimes|boolean',
             'sms' => 'sometimes|boolean',
@@ -76,7 +77,7 @@ class CreateAnnouncementRequest extends FormRequest
 
         $message = $fieldErrors->count() > 1
             ? 'There are multiple validation errors. Please review the form and correct the issues.'
-            : 'There is an issue with the input for ' . $fieldErrors->first()['field'] . '.';
+            : 'There is an issue with the input for '.$fieldErrors->first()['field'].'.';
 
         throw new HttpResponseException(response()->json([
             'message' => $message,
