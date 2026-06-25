@@ -28,7 +28,7 @@ class UpdateLeadRequest extends FormRequest
             'phone_secondary' => 'nullable|string|max:50',
             'have_whatsapp' => 'sometimes|boolean',
             'whatsapp_number' => 'nullable|string|max:50',
-            'birthday' => 'nullable|date_format:Y-m-d|before_or_equal:-18 years',
+            'birthday' => 'nullable|date_format:Y-m-d|before_or_equal:-15 years',
             'id_type' => 'nullable|string|max:100',
             'id_number' => 'nullable|string|max:100',
             'preferred_language' => 'sometimes|in:english,sinhala,tamil',
@@ -45,7 +45,7 @@ class UpdateLeadRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'birthday.before_or_equal' => 'The lead must be 18 years or older.',
+            'birthday.before_or_equal' => 'The lead must be 15 years or older.',
         ];
     }
 
