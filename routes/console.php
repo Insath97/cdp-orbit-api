@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 /* reminder alerts */
 Schedule::command('app:send-event-reminders')->everyMinute();
+Schedule::command('app:send-birthday-wishes')->dailyAt('16:06');

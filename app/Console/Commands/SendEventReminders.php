@@ -4,12 +4,14 @@ namespace App\Console\Commands;
 
 use App\Models\Event;
 use App\Notifications\EventReminderNotification;
+use App\Traits\ActivityLogTrait;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class SendEventReminders extends Command
 {
+    use ActivityLogTrait;
     /**
      * The name and signature of the console command.
      *
@@ -66,14 +68,33 @@ class SendEventReminders extends Command
 
                         $sentCount++;
                         $this->info("Reminder sent for event ID {$event->id}: '{$event->title}' to User ID {$assignedUser->id}");
+                        $this->logActivity(
+                            'SEND_EVENT_REMINDER',
+                            'Event',
+                            "Reminder sent for event ID {$event->id}: '{$event->title}' to User ID {$assignedUser->id}",
+                            ['event_id' => $event->id, 'user_id' => $assignedUser->id, 'title' => $event->title]
+                        );
                     }
                 } catch (\Throwable $th) {
                     Log::error("Failed to send reminder for event ID {$event->id}: " . $th->getMessage());
+                    $this->logActivity(
+                        'SEND_EVENT_REMINDER_FAILED',
+                        'Event',
+                        "Failed to send reminder for event ID {$event->id}: " . $th->getMessage(),
+                        ['event_id' => $event->id, 'error' => $th->getMessage()],
+                        'error'
+                    );
                 }
             }
         }
 
         $this->info("Event reminder scan finished. Sent {$sentCount} reminder(s).");
+        $this->logActivity(
+            'SEND_EVENT_REMINDERS_SCAN',
+            'Event',
+            "Event reminder scan finished. Sent {$sentCount} reminder(s).",
+            ['total_events' => $events->count(), 'sent_count' => $sentCount]
+        );
         return Command::SUCCESS;
     }
 }

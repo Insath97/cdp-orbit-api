@@ -17,6 +17,7 @@ use App\Models\Region;
 use App\Models\Status;
 use App\Models\User;
 use App\Models\Zonal;
+use App\Traits\ActivityLogTrait;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -26,6 +27,8 @@ use Carbon\Carbon;
 
 class BulkImportService
 {
+    use ActivityLogTrait;
+    
     /**
      * Get configuration for all importable tables in CDP Orbit.
      */
@@ -241,11 +244,25 @@ class BulkImportService
                     'row' => $rowNumber,
                     'error' => $e->getMessage()
                 ];
-                Log::error("Import failed for table $table at row $rowNumber: " . $e->getMessage());
+                $this->logActivity(
+                    'BULK_IMPORT_ROW_FAILED',
+                    'BulkImport',
+                    "Import failed for table {$table} at row {$rowNumber}: " . $e->getMessage(),
+                    ['table' => $table, 'row' => $rowNumber, 'error' => $e->getMessage()],
+                    'error'
+                );
             }
         }
 
         fclose($handle);
+
+        $this->logActivity(
+            'BULK_IMPORT_SUCCESS',
+            'BulkImport',
+            "Bulk import completed for table {$table}. Total: {$results['total']}, Imported: {$results['imported']}, Failed: {$results['failed']}",
+            ['table' => $table, 'results' => $results]
+        );
+
         return $results;
     }
 

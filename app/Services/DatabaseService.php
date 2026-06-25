@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Traits\ActivityLogTrait;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -10,6 +11,7 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class DatabaseService
 {
+    use ActivityLogTrait;
     /**
      * Export the database to a SQL file.
      *
@@ -68,9 +70,22 @@ class DatabaseService
         exec($command, $output, $returnVar);
 
         if ($returnVar !== 0) {
-            Log::error("Database export failed", ['output' => $output, 'command' => $command]);
+            $this->logActivity(
+                'DATABASE_EXPORT_FAILED',
+                'Database',
+                'Database export failed',
+                ['output' => $output, 'command' => $command],
+                'error'
+            );
             throw new \Exception("Database export failed with exit code {$returnVar}. Ensure mysqldump is in your PATH.");
         }
+
+        $this->logActivity(
+            'DATABASE_EXPORT_SUCCESS',
+            'Database',
+            "Database exported successfully: {$filename}",
+            ['file_path' => $filePath]
+        );
 
         return $filePath;
     }

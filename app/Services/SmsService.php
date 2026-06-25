@@ -139,10 +139,15 @@ class SmsService
                 'payment_method' => $paymentMethod,
             ];
 
-            Log::info('Sending SMS via Dialog API', [
-                'numbers_count' => count($formattedNumbers),
-                'transaction_id' => $transactionId
-            ]);
+            $this->logActivity(
+                'SENDING_SMS',
+                'Sms',
+                'Sending SMS via Dialog API',
+                [
+                    'numbers_count' => count($formattedNumbers),
+                    'transaction_id' => $transactionId
+                ]
+            );
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $token,
