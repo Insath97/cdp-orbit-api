@@ -57,7 +57,7 @@ class SendBirthdayWishes extends Command
 
         // Company signature and contact details
         $footer = "\n\nBest Wishes,\n".
-                  "Ceylon Development Plantation (Pvt) Ltd.\n\n".
+                  "Ceylon Development Plantation Empire (Pvt) Ltd.\n\n".
                   "For any inquiries:\n".
                   "Hotline: +94 114 007 007\n".
                   'Website: https://cdp.lk/';
