@@ -38,6 +38,7 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+    Route::patch('me', [AuthController::class, 'updateProfile']);
 
     // Imports
     Route::prefix('import')->group(function () {
