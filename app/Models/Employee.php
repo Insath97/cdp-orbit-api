@@ -31,7 +31,6 @@ class Employee extends Model
         'id_number',
         'date_of_birth',
         'email',
-        'phone',
         'address_line_1',
         'city',
         'state',

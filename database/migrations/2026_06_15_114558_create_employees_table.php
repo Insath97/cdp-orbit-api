@@ -33,13 +33,12 @@ return new class extends Migration
             $table->string('id_number')->unique();
             $table->date('date_of_birth')->nullable();
             $table->string('email')->unique();
-            $table->string('phone')->nullable();
             $table->string('address_line_1')->nullable();
             $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->string('country')->default('Sri Lanka');
             $table->string('postal_code')->nullable();
-            $table->string('phone_primary');
+            $table->string('phone_primary')->nullable();
             $table->string('phone_secondary')->nullable();
             $table->boolean('have_whatsapp')->default(false);
             $table->string('whatsapp_number')->nullable();
