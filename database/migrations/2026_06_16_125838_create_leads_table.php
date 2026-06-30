@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->nullable();
-            $table->string('phone_primary');
+            $table->string('phone_primary')->nullable();
             $table->string('phone_secondary')->nullable();
             $table->boolean('have_whatsapp')->default(false);
             $table->string('whatsapp_number')->nullable();

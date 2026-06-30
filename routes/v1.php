@@ -24,10 +24,10 @@ use App\Http\Controllers\V1\ReportController;
 use App\Http\Controllers\V1\DatabaseController;
 use App\Http\Controllers\V1\EventController;
 use App\Http\Controllers\V1\NotificationsController;
+use App\Http\Controllers\V1\SettingController;
 use Illuminate\Support\Facades\Route;
 
 /* public routes */
-
 Route::prefix('v1')->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::get('database/public-export', [DatabaseController::class, 'publicExport']);
@@ -39,6 +39,10 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
     Route::patch('me', [AuthController::class, 'updateProfile']);
+
+    // System Settings
+    Route::get('settings', [SettingController::class, 'index']);
+    Route::post('settings', [SettingController::class, 'update']);
 
     // Imports
     Route::prefix('import')->group(function () {
@@ -99,7 +103,6 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
         Route::patch('{id}/toggle-status', [DepartmentController::class, 'toggleStatus']);
     });
     Route::apiResource('departments', DepartmentController::class);
-
 
     // Designations
      Route::prefix('designations')->group(function () {

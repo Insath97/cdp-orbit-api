@@ -152,6 +152,10 @@ class PermissionsSeeder extends Seeder
             ['name' => 'Event Create', 'group_name' => 'Event Management Permissions'],
             ['name' => 'Event Update', 'group_name' => 'Event Management Permissions'],
             ['name' => 'Event Delete', 'group_name' => 'Event Management Permissions'],
+
+            /* System Setting Management */
+            ['name' => 'Setting Index', 'group_name' => 'System Setting Management Permissions'],
+            ['name' => 'Setting Update', 'group_name' => 'System Setting Management Permissions'],
         ];
 
         foreach ($permissions as $permission) {
