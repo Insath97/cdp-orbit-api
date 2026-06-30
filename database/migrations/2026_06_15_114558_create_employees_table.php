@@ -26,7 +26,7 @@ return new class extends Migration
             $table->foreignId('zonal_id')->nullable()->constrained('zonals')->nullOnDelete();
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
             $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
-            $table->foreignId('designation_id')->constrained('designations')->cascadeOnDelete();
+            $table->foreignId('designation_id')->nullable()->constrained('designations')->nullOnDelete();
 
             $table->enum('employee_type', ['permanent', 'contract', 'internship', 'probation']);
             $table->enum('id_type', ['nic', 'passport', 'driving_license', 'other']);
