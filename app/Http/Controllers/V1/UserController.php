@@ -642,6 +642,33 @@ class UserController extends Controller implements HasMiddleware
                 ], 403);
             }
 
+            // 1. Auto-correct names of existing users if they are currently empty
+            $emptyNameUsers = User::whereNotNull('employee_id')
+                ->where(function ($query) {
+                    $query->whereNull('name')->orWhere('name', '');
+                })
+                ->with('employee')
+                ->get();
+
+            $correctedCount = 0;
+            foreach ($emptyNameUsers as $user) {
+                if ($user->employee) {
+                    $emp = $user->employee;
+                    $name = trim($emp->f_name . ' ' . $emp->l_name);
+                    if (empty($name)) {
+                        $name = trim($emp->full_name);
+                    }
+                    if (empty($name)) {
+                        $name = trim($emp->name_with_initials);
+                    }
+                    if (empty($name)) {
+                        $name = 'Employee ' . ($emp->employee_code ?? $emp->id);
+                    }
+                    $user->update(['name' => $name]);
+                    $correctedCount++;
+                }
+            }
+
             // Get all employees who do not have an associated user account
             $employees = Employee::whereDoesntHave('user')->get();
             $generatedCount = 0;
@@ -695,9 +722,21 @@ class UserController extends Controller implements HasMiddleware
                     continue;
                 }
 
+                // Resolve fallback name for new user
+                $name = trim($employee->f_name . ' ' . $employee->l_name);
+                if (empty($name)) {
+                    $name = trim($employee->full_name);
+                }
+                if (empty($name)) {
+                    $name = trim($employee->name_with_initials);
+                }
+                if (empty($name)) {
+                    $name = 'Employee ' . ($employee->employee_code ?? $employee->id);
+                }
+
                 // Create User
                 $user = User::create([
-                    'name' => trim($employee->f_name . ' ' . $employee->l_name),
+                    'name' => $name,
                     'username' => $employee->employee_code,
                     'email' => $employee->email,
                     'password' => $hashedPassword,
@@ -717,13 +756,14 @@ class UserController extends Controller implements HasMiddleware
                 $generatedCount++;
             }
 
-            $this->logActivity('BULK_GENERATE_USERS', 'User', "Generated {$generatedCount} user accounts from employees.");
+            $this->logActivity('BULK_GENERATE_USERS', 'User', "Generated {$generatedCount} user accounts from employees. Corrected {$correctedCount} existing blank names.");
 
             return response()->json([
                 'status' => 'success',
-                'message' => "Successfully generated {$generatedCount} user accounts for employees.",
+                'message' => "Successfully generated {$generatedCount} user accounts for employees and updated {$correctedCount} existing blank names.",
                 'data' => [
                     'generated_count' => $generatedCount,
+                    'corrected_count' => $correctedCount,
                     'skipped' => count($errors),
                     'errors' => $errors
                 ]
