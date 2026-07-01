@@ -625,4 +625,108 @@ class UserController extends Controller implements HasMiddleware
             ], 500);
         }
     }
+
+    /**
+     * Generate user accounts for all employees who do not have one.
+     */
+    public function generateFromEmployees(Request $request)
+    {
+        try {
+            $currentUser = auth("api")->user();
+
+            // Only allow Super Admins to run this bulk generator
+            if (!$currentUser || !$currentUser->hasRole('Super Admin')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only Super Admin can execute this action.'
+                ], 403);
+            }
+
+            // Get all employees who do not have an associated user account
+            $employees = Employee::whereDoesntHave('user')->get();
+            $generatedCount = 0;
+            $errors = [];
+
+            foreach ($employees as $employee) {
+                if (empty($employee->employee_code)) {
+                    $errors[] = [
+                        'employee_id' => $employee->id,
+                        'name' => $employee->full_name,
+                        'error' => 'Missing employee code.'
+                    ];
+                    continue;
+                }
+
+                if (empty($employee->email)) {
+                    $errors[] = [
+                        'employee_id' => $employee->id,
+                        'name' => $employee->full_name,
+                        'error' => 'Missing email address.'
+                    ];
+                    continue;
+                }
+
+                // Check for duplicate username or email in users table
+                if (User::where('username', $employee->employee_code)->exists()) {
+                    $errors[] = [
+                        'employee_id' => $employee->id,
+                        'name' => $employee->full_name,
+                        'error' => "Username '{$employee->employee_code}' already exists."
+                    ];
+                    continue;
+                }
+
+                if (User::where('email', $employee->email)->exists()) {
+                    $errors[] = [
+                        'employee_id' => $employee->id,
+                        'name' => $employee->full_name,
+                        'error' => "Email '{$employee->email}' already exists."
+                    ];
+                    continue;
+                }
+
+                // Create User
+                $user = User::create([
+                    'name' => $employee->full_name,
+                    'username' => $employee->employee_code,
+                    'email' => $employee->email,
+                    'password' => Hash::make('cdp@2026'),
+                    'user_type' => 'admin',
+                    'employee_id' => $employee->id,
+                    'is_active' => true,
+                    'can_login' => true,
+                    'email_verified_at' => now(),
+                ]);
+
+                // Assign CDP Employee Role (ensuring role exists first)
+                try {
+                    $user->assignRole('CDP Employee');
+                } catch (\Throwable $roleEx) {
+                    \Spatie\Permission\Models\Role::firstOrCreate(['guard_name' => 'api', 'name' => 'CDP Employee']);
+                    $user->assignRole('CDP Employee');
+                }
+
+                $generatedCount++;
+            }
+
+            $this->logActivity('BULK_GENERATE_USERS', 'User', "Generated {$generatedCount} user accounts from employees.");
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Successfully generated {$generatedCount} user accounts for employees.",
+                'data' => [
+                    'generated_count' => $generatedCount,
+                    'skipped' => count($errors),
+                    'errors' => $errors
+                ]
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to generate user accounts',
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
 }

@@ -58,6 +58,7 @@ Route::middleware(['auth:api'])->prefix('v1')->group(function () {
     Route::get('roles/list/', [RoleController::class, 'getAvailableRoles']);
     Route::apiResource('roles', RoleController::class);
 
+    Route::post('users/generate-from-employees', [UserController::class, 'generateFromEmployees']);
     Route::get('users/staff-list', [UserController::class, 'getStaffList']);
     Route::patch('users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
     Route::apiResource('users', UserController::class);
