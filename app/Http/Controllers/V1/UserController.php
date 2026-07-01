@@ -697,7 +697,7 @@ class UserController extends Controller implements HasMiddleware
 
                 // Create User
                 $user = User::create([
-                    'name' => $employee->full_name,
+                    'name' => trim($employee->f_name . ' ' . $employee->l_name),
                     'username' => $employee->employee_code,
                     'email' => $employee->email,
                     'password' => $hashedPassword,
