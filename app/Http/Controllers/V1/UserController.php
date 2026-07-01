@@ -647,6 +647,16 @@ class UserController extends Controller implements HasMiddleware
             $generatedCount = 0;
             $errors = [];
 
+            // Performance Optimization: Hash the password once outside the loop
+            $hashedPassword = Hash::make('cdp@2026');
+
+            // Performance Optimization: Ensure the CDP Employee role exists outside the loop
+            try {
+                \Spatie\Permission\Models\Role::firstOrCreate(['guard_name' => 'api', 'name' => 'CDP Employee']);
+            } catch (\Throwable $roleEx) {
+                // Ignore if already exists or fails to create here
+            }
+
             foreach ($employees as $employee) {
                 if (empty($employee->employee_code)) {
                     $errors[] = [
@@ -690,19 +700,18 @@ class UserController extends Controller implements HasMiddleware
                     'name' => $employee->full_name,
                     'username' => $employee->employee_code,
                     'email' => $employee->email,
-                    'password' => Hash::make('cdp@2026'),
+                    'password' => $hashedPassword,
                     'user_type' => 'staff',
                     'employee_id' => $employee->id,
                     'is_active' => true,
                     'can_login' => true,
                 ]);
 
-                // Assign CDP Employee Role (ensuring role exists first)
+                // Assign CDP Employee Role
                 try {
                     $user->assignRole('CDP Employee');
                 } catch (\Throwable $roleEx) {
-                    \Spatie\Permission\Models\Role::firstOrCreate(['guard_name' => 'api', 'name' => 'CDP Employee']);
-                    $user->assignRole('CDP Employee');
+                    // Ignore if assign fails
                 }
 
                 $generatedCount++;
