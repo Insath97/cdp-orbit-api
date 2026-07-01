@@ -469,6 +469,19 @@ class BulkImportService
         $modelClass = $config['model'];
         $uniqueKeyField = $config['unique_key'];
 
+        // Fallback unique key resolution if the default unique key is missing or empty
+        if (!isset($data[$uniqueKeyField]) || $data[$uniqueKeyField] === '') {
+            if (isset($data['id']) && $data['id'] !== '') {
+                $uniqueKeyField = 'id';
+            } elseif (isset($data['employee_code']) && $data['employee_code'] !== '') {
+                $uniqueKeyField = 'employee_code';
+            }
+        }
+
+        if (!isset($data[$uniqueKeyField])) {
+            throw new \Exception("Missing unique identifier '{$uniqueKeyField}' in the CSV data. Please ensure a valid identifier (e.g. 'id_number', 'employee_code', or 'id') is provided.");
+        }
+
         // Resolve Dependencies
         if (isset($config['dependencies'])) {
             foreach ($config['dependencies'] as $csvCol => $dep) {
