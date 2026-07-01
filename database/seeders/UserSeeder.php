@@ -20,6 +20,7 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Development Admin',
                 'password' => bcrypt('password'),
+                'user_type' => 'admin',
                 'is_active' => true,
                 'can_login' => true,
             ]
