@@ -691,11 +691,10 @@ class UserController extends Controller implements HasMiddleware
                     'username' => $employee->employee_code,
                     'email' => $employee->email,
                     'password' => Hash::make('cdp@2026'),
-                    'user_type' => 'admin',
+                    'user_type' => 'staff',
                     'employee_id' => $employee->id,
                     'is_active' => true,
                     'can_login' => true,
-                    'email_verified_at' => now(),
                 ]);
 
                 // Assign CDP Employee Role (ensuring role exists first)
