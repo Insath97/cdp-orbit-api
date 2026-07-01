@@ -30,7 +30,7 @@ return new class extends Migration
 
             $table->enum('employee_type', ['permanent', 'contract', 'internship', 'probation']);
             $table->enum('id_type', ['nic', 'passport', 'driving_license', 'other']);
-            $table->string('id_number')->unique();
+            $table->string('id_number')->nullable()->unique();
             $table->date('date_of_birth')->nullable();
             $table->string('email')->unique();
             $table->string('address_line_1')->nullable();

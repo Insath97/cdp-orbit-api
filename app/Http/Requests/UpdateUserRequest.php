@@ -40,7 +40,7 @@ class UpdateUserRequest extends FormRequest
             'f_name' => 'sometimes|string|max:255',
             'l_name' => 'sometimes|string|max:255',
             'employee_code' => 'sometimes|string|unique:employees,employee_code,' . $employeeId,
-            'id_number' => 'sometimes|string|unique:employees,id_number,' . $employeeId,
+            'id_number' => 'sometimes|nullable|string|unique:employees,id_number,' . $employeeId,
             'phone' => 'nullable|string',
             'branch_id' => 'nullable|exists:branches,id',
             'zonal_id' => 'nullable|exists:zonals,id',

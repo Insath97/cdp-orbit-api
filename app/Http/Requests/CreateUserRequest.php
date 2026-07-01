@@ -36,7 +36,7 @@ class CreateUserRequest extends FormRequest
             'f_name' => 'required_if:user_type,staff|nullable|string|max:255',
             'l_name' => 'required_if:user_type,staff|nullable|string|max:255',
             'employee_code' => 'required_if:user_type,staff|nullable|string|unique:employees,employee_code',
-            'id_number' => 'required_if:user_type,staff|nullable|string|unique:employees,id_number',
+            'id_number' => 'nullable|string|unique:employees,id_number',
             'phone' => 'nullable|string',
             'branch_id' => 'nullable|exists:branches,id',
             'zonal_id' => 'nullable|exists:zonals,id',
