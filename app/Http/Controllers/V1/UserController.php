@@ -9,13 +9,13 @@ use App\Mail\UserCreateMail;
 use App\Models\Employee;
 use App\Models\User;
 use App\Traits\ActivityLogTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
 
 class UserController extends Controller implements HasMiddleware
 {
@@ -50,22 +50,23 @@ class UserController extends Controller implements HasMiddleware
                             'region_id',
                             'branch_id',
                             'department_id',
-                            'designation_id'
+                            'designation_id',
                         ])->with([
                             'reportingManager:id,full_name',
                             'province:id,name',
                             'region:id,name',
                             'branch:id,name',
                             'department:id,name',
-                            'designation:id,name'
+                            'designation:id,name',
                         ]);
-                    }
+                    },
                 ])
                 ->orderBy('name', 'asc')
                 ->get(['id', 'name', 'employee_id']);
 
             $formattedUsers = $users->map(function ($user) {
                 $emp = $user->employee;
+
                 return [
                     'user_id' => $user->id,
                     'username' => $user->name,
@@ -76,27 +77,27 @@ class UserController extends Controller implements HasMiddleware
                     'id_number' => $emp?->id_number,
                     'reporting_manager' => $emp?->reportingManager ? [
                         'id' => $emp->reportingManager->id,
-                        'full_name' => $emp->reportingManager->full_name
+                        'full_name' => $emp->reportingManager->full_name,
                     ] : null,
                     'province' => $emp?->province ? [
                         'id' => $emp->province->id,
-                        'name' => $emp->province->name
+                        'name' => $emp->province->name,
                     ] : null,
                     'region' => $emp?->region ? [
                         'id' => $emp->region->id,
-                        'name' => $emp->region->name
+                        'name' => $emp->region->name,
                     ] : null,
                     'branch' => $emp?->branch ? [
                         'id' => $emp->branch->id,
-                        'name' => $emp->branch->name
+                        'name' => $emp->branch->name,
                     ] : null,
                     'department' => $emp?->department ? [
                         'id' => $emp->department->id,
-                        'name' => $emp->department->name
+                        'name' => $emp->department->name,
                     ] : null,
                     'designation' => $emp?->designation ? [
                         'id' => $emp->designation->id,
-                        'name' => $emp->designation->name
+                        'name' => $emp->designation->name,
                     ] : null,
                 ];
             });
@@ -167,18 +168,20 @@ class UserController extends Controller implements HasMiddleware
                         unset($role['pivot']);
                     }
                 }
+
                 return $userData;
             });
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Users retrieved successfully',
-                'data' => $users
+                'data' => $users,
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve users',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -186,15 +189,15 @@ class UserController extends Controller implements HasMiddleware
     public function store(CreateUserRequest $request)
     {
         try {
-            $currentUser = auth("api")->user();
+            $currentUser = auth('api')->user();
             $data = $request->validated();
 
             // Restrict admin user creation to Super Admins only
             if ($data['user_type'] === 'admin') {
-                if (!$currentUser || !$currentUser->hasRole('Super Admin')) {
+                if (! $currentUser || ! $currentUser->hasRole('Super Admin')) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Only Super Admin can create admin users'
+                        'message' => 'Only Super Admin can create admin users',
                     ], 403);
                 }
             }
@@ -204,7 +207,7 @@ class UserController extends Controller implements HasMiddleware
                 $employeeData = [
                     'f_name' => $data['f_name'],
                     'l_name' => $data['l_name'],
-                    'full_name' => trim($data['f_name'] . ' ' . $data['l_name']),
+                    'full_name' => trim($data['f_name'].' '.$data['l_name']),
                     'employee_code' => $data['employee_code'],
                     'id_number' => $data['id_number'],
                     'phone' => $data['phone'] ?? null,
@@ -235,10 +238,10 @@ class UserController extends Controller implements HasMiddleware
 
                 $employee = Employee::create($employeeData);
 
-                // Set staff credentials automatically to id_number
+                // Set staff credentials automatically to employee_code and password to cdp@2026
                 $data['employee_id'] = $employee->id;
-                $data['username'] = $data['id_number'];
-                $data['password'] = Hash::make($data['id_number']);
+                $data['username'] = $data['employee_code'];
+                $data['password'] = Hash::make('cdp@2026');
                 $data['name'] = $data['name'] ?? $employeeData['full_name'];
             } else {
                 // For admin users
@@ -268,7 +271,7 @@ class UserController extends Controller implements HasMiddleware
                         'user_type' => $user->user_type,
                         'email_verified_at' => $user->email_verified_at,
                     ],
-                    'password' => ($user->user_type === 'staff') ? $data['id_number'] : $request->password,
+                    'password' => ($user->user_type === 'staff') ? 'cdp@2026' : $request->password,
                     'role' => $data['role'] ?? null,
                     'created_by' => $currentUser ? $currentUser->name : 'System',
                     'login_url' => trim(config('app.frontend_url') ?? config('app.url')),
@@ -309,7 +312,7 @@ class UserController extends Controller implements HasMiddleware
             $user->load([
                 'roles' => function ($q) {
                     $q->select('id', 'name');
-                }
+                },
             ]);
 
             $this->logActivity('CREATE', 'User', "Created user: {$user->username}", $data);
@@ -324,13 +327,13 @@ class UserController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'User created successfully',
-                'data' => $userData
+                'data' => $userData,
             ], 201);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to create user',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -341,19 +344,19 @@ class UserController extends Controller implements HasMiddleware
             $currentUser = auth('api')->user();
             $user = User::with(['employee.branch', 'employee.zonal', 'employee.region', 'employee.province', 'employee.reportingManager.user', 'employee.subordinates.user', 'employee.designation', 'roles'])->find($id);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'User not found'
+                    'message' => 'User not found',
                 ], 404);
             }
 
             // If staff, restrict access to self or descendants
             if ($currentUser->user_type === 'staff') {
-                if ($user->id !== $currentUser->id && !in_array($user->id, $currentUser->getAllDescendantIds())) {
+                if ($user->id !== $currentUser->id && ! in_array($user->id, $currentUser->getAllDescendantIds())) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Unauthorized access to this user profile'
+                        'message' => 'Unauthorized access to this user profile',
                     ], 403);
                 }
             }
@@ -368,13 +371,13 @@ class UserController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'User retrieved successfully',
-                'data' => $userData
+                'data' => $userData,
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to retrieve user',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -382,13 +385,13 @@ class UserController extends Controller implements HasMiddleware
     public function update(UpdateUserRequest $request, string $id)
     {
         try {
-            $currentUser = auth("api")->user();
+            $currentUser = auth('api')->user();
             $user = User::find($id);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'User not found'
+                    'message' => 'User not found',
                 ], 404);
             }
 
@@ -397,10 +400,10 @@ class UserController extends Controller implements HasMiddleware
             // Restrict admin user update to Super Admins only (both updating an existing admin or changing user_type to admin)
             $isTargetingAdmin = ($user->user_type === 'admin') || (isset($data['user_type']) && $data['user_type'] === 'admin');
             if ($isTargetingAdmin) {
-                if (!$currentUser || !$currentUser->hasRole('Super Admin')) {
+                if (! $currentUser || ! $currentUser->hasRole('Super Admin')) {
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Only Super Admin can manage admin users'
+                        'message' => 'Only Super Admin can manage admin users',
                     ], 403);
                 }
             }
@@ -443,7 +446,7 @@ class UserController extends Controller implements HasMiddleware
                     'whatsapp_number',
                     'start_date',
                     'end_date',
-                    'name_with_initials'
+                    'name_with_initials',
                 ]));
 
                 if ($user->employee) {
@@ -451,32 +454,32 @@ class UserController extends Controller implements HasMiddleware
                     if (isset($employeeData['f_name']) || isset($employeeData['l_name'])) {
                         $fName = $employeeData['f_name'] ?? $user->employee->f_name;
                         $lName = $employeeData['l_name'] ?? $user->employee->l_name;
-                        $employeeData['full_name'] = trim($fName . ' ' . $lName);
+                        $employeeData['full_name'] = trim($fName.' '.$lName);
                     }
                     $user->employee->update($employeeData);
                 } else {
                     // Create new employee if they were previously an admin
                     $fName = $employeeData['f_name'] ?? '';
                     $lName = $employeeData['l_name'] ?? '';
-                    $employeeData['full_name'] = trim($fName . ' ' . $lName);
-                    if (!isset($employeeData['country'])) {
+                    $employeeData['full_name'] = trim($fName.' '.$lName);
+                    if (! isset($employeeData['country'])) {
                         $employeeData['country'] = 'Sri Lanka';
                     }
-                    if (!isset($employeeData['have_whatsapp'])) {
+                    if (! isset($employeeData['have_whatsapp'])) {
                         $employeeData['have_whatsapp'] = false;
                     }
                     $employee = \App\Models\Employee::create($employeeData);
                     $data['employee_id'] = $employee->id;
                 }
 
-                // If id_number is updated, sync username
-                if (isset($data['id_number'])) {
-                    $data['username'] = $data['id_number'];
+                // If employee_code is updated, sync username
+                if (isset($data['employee_code'])) {
+                    $data['username'] = $data['employee_code'];
                 }
 
                 // If f_name/l_name is updated, sync user name
                 if (isset($employeeData['f_name']) || isset($employeeData['l_name'])) {
-                    $data['name'] = $data['name'] ?? trim(($employeeData['f_name'] ?? $user->employee?->f_name ?? '') . ' ' . ($employeeData['l_name'] ?? $user->employee?->l_name ?? ''));
+                    $data['name'] = $data['name'] ?? trim(($employeeData['f_name'] ?? $user->employee?->f_name ?? '').' '.($employeeData['l_name'] ?? $user->employee?->l_name ?? ''));
                 }
             } else {
                 // If changing from staff to admin, detach and delete the old employee record
@@ -504,7 +507,7 @@ class UserController extends Controller implements HasMiddleware
                 'employee.designation',
                 'roles' => function ($q) {
                     $q->select('id', 'name');
-                }
+                },
             ]);
 
             $this->logActivity('UPDATE', 'User', "Updated user: {$user->username}", $data);
@@ -519,13 +522,13 @@ class UserController extends Controller implements HasMiddleware
             return response()->json([
                 'status' => 'success',
                 'message' => 'User updated successfully',
-                'data' => $userData
+                'data' => $userData,
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update user',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -535,19 +538,20 @@ class UserController extends Controller implements HasMiddleware
         try {
             $user = User::find($id);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'User not found'
+                    'message' => 'User not found',
                 ], 404);
             }
 
             // Check if user is Super Admin
-            if (!Auth::user()->hasRole('Super Admin')) {
+            if (! Auth::user()->hasRole('Super Admin')) {
                 $this->logActivity('UNAUTHORIZED_DELETE', 'User', "Unauthorized user deletion attempt on ID: {$id}", ['target_user_id' => $id], 'warning');
+
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Only Super Admin can delete users'
+                    'message' => 'Only Super Admin can delete users',
                 ], 403);
             }
 
@@ -555,7 +559,7 @@ class UserController extends Controller implements HasMiddleware
             if ($user->id === Auth::id()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'You cannot delete your own account'
+                    'message' => 'You cannot delete your own account',
                 ], 422);
             }
 
@@ -573,13 +577,13 @@ class UserController extends Controller implements HasMiddleware
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'User deleted successfully'
+                'message' => 'User deleted successfully',
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to delete user',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -589,10 +593,10 @@ class UserController extends Controller implements HasMiddleware
         try {
             $user = User::find($id);
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'User not found'
+                    'message' => 'User not found',
                 ], 404);
             }
 
@@ -600,28 +604,28 @@ class UserController extends Controller implements HasMiddleware
             if ($user->id === Auth::id()) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'You cannot deactivate your own account'
+                    'message' => 'You cannot deactivate your own account',
                 ], 422);
             }
 
-            $user->is_active = !$user->is_active;
+            $user->is_active = ! $user->is_active;
             $user->save();
 
-            $this->logActivity('TOGGLE_STATUS', 'User', "Toggled user status: {$user->username} (" . ($user->is_active ? 'Active' : 'Inactive') . ")");
+            $this->logActivity('TOGGLE_STATUS', 'User', "Toggled user status: {$user->username} (".($user->is_active ? 'Active' : 'Inactive').')');
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'User status updated successfully',
                 'data' => [
                     'id' => $user->id,
-                    'is_active' => $user->is_active
-                ]
+                    'is_active' => $user->is_active,
+                ],
             ], 200);
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to toggle user status',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }
@@ -632,13 +636,13 @@ class UserController extends Controller implements HasMiddleware
     public function generateFromEmployees(Request $request)
     {
         try {
-            $currentUser = auth("api")->user();
+            $currentUser = auth('api')->user();
 
             // Only allow Super Admins to run this bulk generator
-            if (!$currentUser || !$currentUser->hasRole('Super Admin')) {
+            if (! $currentUser || ! $currentUser->hasRole('Super Admin')) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Only Super Admin can execute this action.'
+                    'message' => 'Only Super Admin can execute this action.',
                 ], 403);
             }
 
@@ -654,7 +658,7 @@ class UserController extends Controller implements HasMiddleware
             foreach ($emptyNameUsers as $user) {
                 if ($user->employee) {
                     $emp = $user->employee;
-                    $name = trim($emp->f_name . ' ' . $emp->l_name);
+                    $name = trim($emp->f_name.' '.$emp->l_name);
                     if (empty($name)) {
                         $name = trim($emp->full_name);
                     }
@@ -662,7 +666,7 @@ class UserController extends Controller implements HasMiddleware
                         $name = trim($emp->name_with_initials);
                     }
                     if (empty($name)) {
-                        $name = 'Employee ' . ($emp->employee_code ?? $emp->id);
+                        $name = 'Employee '.($emp->employee_code ?? $emp->id);
                     }
                     $user->update(['name' => $name]);
                     $correctedCount++;
@@ -689,8 +693,9 @@ class UserController extends Controller implements HasMiddleware
                     $errors[] = [
                         'employee_id' => $employee->id,
                         'name' => $employee->full_name,
-                        'error' => 'Missing employee code.'
+                        'error' => 'Missing employee code.',
                     ];
+
                     continue;
                 }
 
@@ -698,8 +703,9 @@ class UserController extends Controller implements HasMiddleware
                     $errors[] = [
                         'employee_id' => $employee->id,
                         'name' => $employee->full_name,
-                        'error' => 'Missing email address.'
+                        'error' => 'Missing email address.',
                     ];
+
                     continue;
                 }
 
@@ -708,8 +714,9 @@ class UserController extends Controller implements HasMiddleware
                     $errors[] = [
                         'employee_id' => $employee->id,
                         'name' => $employee->full_name,
-                        'error' => "Username '{$employee->employee_code}' already exists."
+                        'error' => "Username '{$employee->employee_code}' already exists.",
                     ];
+
                     continue;
                 }
 
@@ -717,13 +724,14 @@ class UserController extends Controller implements HasMiddleware
                     $errors[] = [
                         'employee_id' => $employee->id,
                         'name' => $employee->full_name,
-                        'error' => "Email '{$employee->email}' already exists."
+                        'error' => "Email '{$employee->email}' already exists.",
                     ];
+
                     continue;
                 }
 
                 // Resolve fallback name for new user
-                $name = trim($employee->f_name . ' ' . $employee->l_name);
+                $name = trim($employee->f_name.' '.$employee->l_name);
                 if (empty($name)) {
                     $name = trim($employee->full_name);
                 }
@@ -731,7 +739,7 @@ class UserController extends Controller implements HasMiddleware
                     $name = trim($employee->name_with_initials);
                 }
                 if (empty($name)) {
-                    $name = 'Employee ' . ($employee->employee_code ?? $employee->id);
+                    $name = 'Employee '.($employee->employee_code ?? $employee->id);
                 }
 
                 // Create User
@@ -765,15 +773,15 @@ class UserController extends Controller implements HasMiddleware
                     'generated_count' => $generatedCount,
                     'corrected_count' => $correctedCount,
                     'skipped' => count($errors),
-                    'errors' => $errors
-                ]
+                    'errors' => $errors,
+                ],
             ], 200);
 
         } catch (\Throwable $th) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to generate user accounts',
-                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error'
+                'error' => config('app.debug') ? $th->getMessage() : 'Internal server error',
             ], 500);
         }
     }

@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Validation\Rule;
 
 class CreateUserRequest extends FormRequest
 {
@@ -47,13 +46,13 @@ class CreateUserRequest extends FormRequest
             'department_id' => 'nullable|exists:departments,id',
             'employee_type' => 'required_if:user_type,staff|nullable|in:permanent,contract,internship,probation',
             'id_type' => 'required_if:user_type,staff|nullable|in:nic,passport,driving_license,other',
-            'date_of_birth' => 'required_if:user_type,staff|nullable|date',
+            'date_of_birth' => 'nullable|date',
             'address_line_1' => 'nullable|string',
             'city' => 'nullable|string',
             'state' => 'nullable|string',
             'country' => 'nullable|string',
             'postal_code' => 'nullable|string',
-            'phone_primary' => 'required_if:user_type,staff|nullable|string',
+            'phone_primary' => 'nullable|string',
             'phone_secondary' => 'nullable|string',
             'have_whatsapp' => 'sometimes|boolean',
             'whatsapp_number' => 'nullable|string',
@@ -79,7 +78,7 @@ class CreateUserRequest extends FormRequest
 
         $message = $fieldErrors->count() > 1
             ? 'There are multiple validation errors. Please review the form and correct the issues.'
-            : 'There is an issue with the input for ' . $fieldErrors->first()['field'] . '.';
+            : 'There is an issue with the input for '.$fieldErrors->first()['field'].'.';
 
         throw new HttpResponseException(response()->json([
             'message' => $message,

@@ -43,9 +43,9 @@ class AuthController extends Controller
                 ->orWhere('email', $loginVal)
                 ->first();
 
-            // Fallback: search employee by id_number
+            // Fallback: search employee by employee_code
             if (!$user) {
-                $employee = \App\Models\Employee::where('id_number', $loginVal)->first();
+                $employee = \App\Models\Employee::where('employee_code', $loginVal)->first();
                 if ($employee) {
                     $user = User::where('employee_id', $employee->id)->first();
                 }
