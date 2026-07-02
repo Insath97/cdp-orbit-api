@@ -117,7 +117,7 @@ class ReportController extends Controller implements HasMiddleware
                 });
 
                 $data[] = [
-                    'employee_name' => $emp->full_name,
+                    'employee_name' => $emp->f_name . ' ' . $emp->l_name,
                     'designation' => $emp->designation?->name,
                     'id_type' => $emp->id_type,
                     'id_number' => $emp->id_number,
