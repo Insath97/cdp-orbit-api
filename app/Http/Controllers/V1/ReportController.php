@@ -23,7 +23,6 @@ class ReportController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('auth:api'),
             new Middleware('permission:Report Hierarchy', ['only' => ['employeeHierarchy']]),
         ];
     }
@@ -68,9 +67,8 @@ class ReportController extends Controller implements HasMiddleware
                     ], 404);
                 }
 
-                $employeesToReport = Employee::with(['designation', 'user'])
-                    ->where('reporting_manager_id', $employee->id)
-                    ->get();
+                // Get all direct and indirect subordinate employees recursively
+                $employeesToReport = $employee->getAllDescendantEmployees();
 
                 if ($employeesToReport->isEmpty()) {
                     $employeesToReport = collect([$employee]);

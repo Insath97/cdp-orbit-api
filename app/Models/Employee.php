@@ -173,4 +173,28 @@ class Employee extends Model
 
         return $userIds;
     }
+
+    /**
+     * Get all direct and indirect subordinate employee models (recursive).
+     *
+     * @param array $visitedIds Internal tracker to prevent infinite loops
+     * @return \Illuminate\Support\Collection
+     */
+    public function getAllDescendantEmployees(array &$visitedIds = []): \Illuminate\Support\Collection
+    {
+        $employees = collect();
+        $visitedIds[] = $this->id;
+
+        $subordinates = Employee::where('reporting_manager_id', $this->id)
+            ->whereNotIn('id', $visitedIds)
+            ->with(['designation', 'user'])
+            ->get();
+
+        foreach ($subordinates as $subordinate) {
+            $employees->push($subordinate);
+            $employees = $employees->merge($subordinate->getAllDescendantEmployees($visitedIds));
+        }
+
+        return $employees;
+    }
 }

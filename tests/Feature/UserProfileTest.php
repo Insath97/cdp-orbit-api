@@ -163,3 +163,179 @@ it('rejects unauthenticated profile updates', function () {
 
     $response->assertStatus(401);
 });
+
+it('shows all recursive subordinates (children and grandchildren) for a parent user in reports', function () {
+    // Clear Spatie Permission cache
+    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+    // Grant the Report Hierarchy permission
+    $permission = \Spatie\Permission\Models\Permission::firstOrCreate([
+        'name' => 'Report Hierarchy',
+        'group_name' => 'Report Management Permissions',
+        'guard_name' => 'api'
+    ]);
+
+    // Setup necessary models
+    $department = \App\Models\Department::create([
+        'name' => 'Sales',
+        'code' => 'SALES',
+    ]);
+
+    $designation = Designation::create([
+        'name' => 'Staff',
+        'code' => 'STAFF',
+        'level' => 'mid',
+        'department_id' => $department->id,
+    ]);
+
+    // Parent
+    $employeeParent = Employee::create([
+        'f_name' => 'Parent',
+        'l_name' => 'User',
+        'full_name' => 'Parent User',
+        'employee_code' => 'EMP_P',
+        'id_type' => 'nic',
+        'id_number' => '111111111V',
+        'phone_primary' => '0771111111',
+        'email' => 'parent@example.com',
+        'designation_id' => $designation->id,
+        'employee_type' => 'permanent',
+    ]);
+    $userParent = User::factory()->create([
+        'name' => 'Parent User',
+        'username' => 'parent_user',
+        'email' => 'parent@example.com',
+        'user_type' => 'staff',
+        'employee_id' => $employeeParent->id,
+    ]);
+    $userParent->givePermissionTo($permission);
+
+    // Child (reports to Parent)
+    $employeeChild = Employee::create([
+        'f_name' => 'Child',
+        'l_name' => 'User',
+        'full_name' => 'Child User',
+        'employee_code' => 'EMP_C',
+        'id_type' => 'nic',
+        'id_number' => '222222222V',
+        'phone_primary' => '0772222222',
+        'email' => 'child@example.com',
+        'designation_id' => $designation->id,
+        'employee_type' => 'permanent',
+        'reporting_manager_id' => $employeeParent->id,
+    ]);
+    $userChild = User::factory()->create([
+        'name' => 'Child User',
+        'username' => 'child_user',
+        'email' => 'child@example.com',
+        'user_type' => 'staff',
+        'employee_id' => $employeeChild->id,
+    ]);
+
+    // Grandchild (reports to Child)
+    $employeeGrandchild = Employee::create([
+        'f_name' => 'Grandchild',
+        'l_name' => 'User',
+        'full_name' => 'Grandchild User',
+        'employee_code' => 'EMP_GC',
+        'id_type' => 'nic',
+        'id_number' => '333333333V',
+        'phone_primary' => '0773333333',
+        'email' => 'grandchild@example.com',
+        'designation_id' => $designation->id,
+        'employee_type' => 'permanent',
+        'reporting_manager_id' => $employeeChild->id,
+    ]);
+    $userGrandchild = User::factory()->create([
+        'name' => 'Grandchild User',
+        'username' => 'grandchild_user',
+        'email' => 'grandchild@example.com',
+        'user_type' => 'staff',
+        'employee_id' => $employeeGrandchild->id,
+    ]);
+
+    // Independent employee (not in the hierarchy)
+    $employeeOther = Employee::create([
+        'f_name' => 'Other',
+        'l_name' => 'User',
+        'full_name' => 'Other User',
+        'employee_code' => 'EMP_O',
+        'id_type' => 'nic',
+        'id_number' => '444444444V',
+        'phone_primary' => '0774444444',
+        'email' => 'other@example.com',
+        'designation_id' => $designation->id,
+        'employee_type' => 'permanent',
+    ]);
+    $userOther = User::factory()->create([
+        'name' => 'Other User',
+        'username' => 'other_user',
+        'email' => 'other@example.com',
+        'user_type' => 'staff',
+        'employee_id' => $employeeOther->id,
+    ]);
+
+    // Create a stage and status for leads
+    $stage = \App\Models\LeadStage::create([
+        'name' => 'Inquiry',
+        'sort_order' => 1,
+        'is_active' => true,
+    ]);
+    $status = \App\Models\Status::create([
+        'name' => 'New',
+        'sort_order' => 1,
+        'color_code' => '#3B82F6',
+        'lead_stage_id' => $stage->id,
+        'is_active' => true,
+    ]);
+
+    // Assign leads
+    \App\Models\Lead::create([
+        'name' => 'Lead for Child',
+        'phone_primary' => '0770000001',
+        'status_id' => $status->id,
+        'created_by' => $userChild->id,
+    ]);
+    \App\Models\Lead::create([
+        'name' => 'Lead for Grandchild',
+        'phone_primary' => '0770000002',
+        'status_id' => $status->id,
+        'created_by' => $userGrandchild->id,
+    ]);
+    \App\Models\Lead::create([
+        'name' => 'Lead for Other',
+        'phone_primary' => '0770000003',
+        'status_id' => $status->id,
+        'created_by' => $userOther->id,
+    ]);
+
+    // 2. Perform Request as Parent
+    $response = $this->actingAs($userParent, 'api')
+        ->getJson('/api/v1/reports/employee-hierarchy');
+
+    // 3. Verify Response
+    if ($response->status() !== 200) {
+        throw new \Exception("Request failed with status " . $response->status() . " and body: " . $response->getContent());
+    }
+
+    $response->assertStatus(200)
+        ->assertJsonPath('status', 'success');
+
+    $data = $response->json('data');
+
+    // Check that we got exactly 2 records (Child and Grandchild)
+    expect($data)->toHaveCount(2);
+
+    $names = collect($data)->pluck('employee_name')->toArray();
+    expect($names)->toContain('Child User');
+    expect($names)->toContain('Grandchild User');
+    expect($names)->not->toContain('Parent User');
+    expect($names)->not->toContain('Other User');
+
+    // Check lead counts are mapped correctly
+    $childRecord = collect($data)->firstWhere('employee_name', 'Child User');
+    expect($childRecord['leads_count'])->toBe(1);
+
+    $grandchildRecord = collect($data)->firstWhere('employee_name', 'Grandchild User');
+    expect($grandchildRecord['leads_count'])->toBe(1);
+});
