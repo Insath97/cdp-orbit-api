@@ -323,19 +323,16 @@ it('shows all recursive subordinates (children and grandchildren) for a parent u
 
     $data = $response->json('data');
 
-    // Check that we got exactly 2 records (Child and Grandchild)
-    expect($data)->toHaveCount(2);
+    // Root level should contain only the direct subordinate (Child User)
+    expect($data)->toHaveCount(1);
+    expect($data[0]['employee_name'])->toBe('Child User');
+    expect($data[0]['leads_count'])->toBe(1);
 
-    $names = collect($data)->pluck('employee_name')->toArray();
-    expect($names)->toContain('Child User');
-    expect($names)->toContain('Grandchild User');
-    expect($names)->not->toContain('Parent User');
-    expect($names)->not->toContain('Other User');
+    // Subordinates of Child User should contain Grandchild User
+    expect($data[0]['subordinates'])->toHaveCount(1);
+    expect($data[0]['subordinates'][0]['employee_name'])->toBe('Grandchild User');
+    expect($data[0]['subordinates'][0]['leads_count'])->toBe(1);
 
-    // Check lead counts are mapped correctly
-    $childRecord = collect($data)->firstWhere('employee_name', 'Child User');
-    expect($childRecord['leads_count'])->toBe(1);
-
-    $grandchildRecord = collect($data)->firstWhere('employee_name', 'Grandchild User');
-    expect($grandchildRecord['leads_count'])->toBe(1);
+    // Grandchild should have no subordinates
+    expect($data[0]['subordinates'][0]['subordinates'])->toBeEmpty();
 });
