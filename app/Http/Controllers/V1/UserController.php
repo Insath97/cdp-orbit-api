@@ -235,10 +235,10 @@ class UserController extends Controller implements HasMiddleware
 
                 $employee = Employee::create($employeeData);
 
-                // Set staff credentials automatically to employee_code and password to cdp@2026
+                // Set staff credentials automatically to id_number
                 $data['employee_id'] = $employee->id;
-                $data['username'] = $data['employee_code'];
-                $data['password'] = Hash::make('cdp@2026');
+                $data['username'] = $data['id_number'];
+                $data['password'] = Hash::make($data['id_number']);
                 $data['name'] = $data['name'] ?? $employeeData['full_name'];
             } else {
                 // For admin users
@@ -268,7 +268,7 @@ class UserController extends Controller implements HasMiddleware
                         'user_type' => $user->user_type,
                         'email_verified_at' => $user->email_verified_at,
                     ],
-                    'password' => ($user->user_type === 'staff') ? 'cdp@2026' : $request->password,
+                    'password' => ($user->user_type === 'staff') ? $data['id_number'] : $request->password,
                     'role' => $data['role'] ?? null,
                     'created_by' => $currentUser ? $currentUser->name : 'System',
                     'login_url' => trim(config('app.frontend_url') ?? config('app.url')),
@@ -469,9 +469,9 @@ class UserController extends Controller implements HasMiddleware
                     $data['employee_id'] = $employee->id;
                 }
 
-                // If employee_code is updated, sync username
-                if (isset($data['employee_code'])) {
-                    $data['username'] = $data['employee_code'];
+                // If id_number is updated, sync username
+                if (isset($data['id_number'])) {
+                    $data['username'] = $data['id_number'];
                 }
 
                 // If f_name/l_name is updated, sync user name
